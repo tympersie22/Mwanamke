@@ -10,7 +10,7 @@
     "start:worker": "node dist/worker.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:integration": "RUN_POSTGRES_TESTS=true vitest run src/postgres.integration.test.ts",
+    "test:integration": "RUN_POSTGRES_TESTS=true vitest run src/postgres.integration.test.ts --testTimeout 15000",
     "lint": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy",

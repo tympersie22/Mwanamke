@@ -41,6 +41,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm exec -w @mwanamke/api -- prisma generate
       - name: Validate production boundaries
         run: node scripts/production/preflight.mjs
       - name: Run application verification

@@ -23,6 +23,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm exec -w @mwanamke/api -- prisma generate
       - run: npm run verify
       - run: npx expo-doctor
         working-directory: apps/mobile
@@ -50,6 +51,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://mwanamke:ci-only-password@127.0.0.1:5432/mwanamke
+      ALLOW_DESTRUCTIVE_TEST_DATABASE: "true"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
