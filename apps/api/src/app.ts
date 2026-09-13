@@ -248,6 +248,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
 
   app.post("/v1/encrypted-records", { config: { rateLimit: mutationRateLimit }, schema: { tags: ["zero-knowledge"], summary: "Store a client-encrypted sensitive record" } }, async (request, reply) => {
+    if (!configuration.features.encryptedRecords) return reply.code(404).send({ error: "FEATURE_NOT_ENABLED" });
     const authorization = await requireActor(request, reply, authenticator, store, ["patient"]);
     if (!authorization) return;
     const deviceId = request.headers["x-mwanamke-device-id"];
@@ -259,6 +260,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
 
   app.get("/v1/encrypted-records/:id", { schema: { tags: ["zero-knowledge"] } }, async (request, reply) => {
+    if (!configuration.features.encryptedRecords) return reply.code(404).send({ error: "FEATURE_NOT_ENABLED" });
     const authorization = await requireActor(request, reply, authenticator, store, ["patient"]);
     if (!authorization) return;
     const deviceId = request.headers["x-mwanamke-device-id"];
@@ -329,6 +331,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     if (expiry <= Date.now() || expiry > Date.now() + 365 * 24 * 60 * 60 * 1000) context.addIssue({ code: "custom", path: ["expiresAt"], message: "Consent expiry must be within one year" });
   });
   app.post("/v1/consents", { config: { rateLimit: highRiskMutationRateLimit }, schema: { tags: ["zero-knowledge"] } }, async (request, reply) => {
+    if (!configuration.features.encryptedRecords) return reply.code(404).send({ error: "FEATURE_NOT_ENABLED" });
     const authorization = await requireActor(request, reply, authenticator, store, ["patient"]);
     if (!authorization) return;
     const parsed = consentSchema.safeParse(request.body);
@@ -338,6 +341,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   });
 
   app.delete("/v1/consents/:id", { config: { rateLimit: highRiskMutationRateLimit }, schema: { tags: ["zero-knowledge"] } }, async (request, reply) => {
+    if (!configuration.features.encryptedRecords) return reply.code(404).send({ error: "FEATURE_NOT_ENABLED" });
     const authorization = await requireActor(request, reply, authenticator, store, ["patient"]);
     if (!authorization) return;
     const id = z.string().uuid().safeParse((request.params as { id: string }).id);

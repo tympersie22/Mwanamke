@@ -18,4 +18,13 @@ for (const name of ["IDENTITY_SUBJECT_HMAC_KEY", "AUDIT_HMAC_KEY"]) {
   if (bytes.length < 32) throw new Error(`${name} must decode to at least 256 bits`);
 }
 if (process.env.IDENTITY_SUBJECT_HMAC_KEY === process.env.AUDIT_HMAC_KEY) throw new Error("Identity and audit keys must be different secrets");
+
+if (process.env.ENABLE_ENCRYPTED_RECORDS && !["true", "false"].includes(process.env.ENABLE_ENCRYPTED_RECORDS)) {
+  throw new Error("ENABLE_ENCRYPTED_RECORDS must be true or false");
+}
+if (process.env.ENABLE_ENCRYPTED_RECORDS === "true") {
+  for (const name of ["INFRASTRUCTURE_APPROVAL_REF", "SECURITY_ASSESSMENT_APPROVAL_REF", "PRIVACY_LEGAL_APPROVAL_REF"]) {
+    if (!process.env[name] || process.env[name].length < 8) throw new Error(`${name} is required before encrypted records can be enabled`);
+  }
+}
 console.log("PASS: production identity, audit, Redis, PostgreSQL and HTTPS boundaries are configured");

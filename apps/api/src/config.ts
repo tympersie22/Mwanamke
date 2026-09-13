@@ -12,6 +12,10 @@ const environmentSchema = z.object({
   AUTH_MODE: z.enum(["development", "oidc"]).default("development"),
   ALLOW_DEMO_AUTH: booleanValue,
   ALLOW_DEMO_DATA: booleanValue,
+  ENABLE_ENCRYPTED_RECORDS: booleanValue,
+  INFRASTRUCTURE_APPROVAL_REF: z.string().min(8).max(200).optional(),
+  SECURITY_ASSESSMENT_APPROVAL_REF: z.string().min(8).max(200).optional(),
+  PRIVACY_LEGAL_APPROVAL_REF: z.string().min(8).max(200).optional(),
   OIDC_ISSUER_URL: z.string().url().optional(),
   OIDC_AUDIENCE: z.string().min(3).optional(),
   OIDC_JWKS_URL: z.string().url().optional(),
@@ -66,6 +70,17 @@ const environmentSchema = z.object({
     if (!valid) context.addIssue({ code: "custom", path: [path], message });
   }
 
+  if (environment.ENABLE_ENCRYPTED_RECORDS) {
+    const approvalRequirements: Array<[string | undefined, string, string]> = [
+      [environment.INFRASTRUCTURE_APPROVAL_REF, "INFRASTRUCTURE_APPROVAL_REF", "Encrypted records require an approved infrastructure and restore-drill reference."],
+      [environment.SECURITY_ASSESSMENT_APPROVAL_REF, "SECURITY_ASSESSMENT_APPROVAL_REF", "Encrypted records require an independent security-assessment approval reference."],
+      [environment.PRIVACY_LEGAL_APPROVAL_REF, "PRIVACY_LEGAL_APPROVAL_REF", "Encrypted records require a signed privacy and Tanzania/Zanzibar legal approval reference."]
+    ];
+    for (const [value, path, message] of approvalRequirements) {
+      if (!value) context.addIssue({ code: "custom", path: [path], message });
+    }
+  }
+
   if (environment.DATABASE_URL && !/^postgres(ql)?:\/\//.test(environment.DATABASE_URL)) {
     context.addIssue({ code: "custom", path: ["DATABASE_URL"], message: "DATABASE_URL must use PostgreSQL." });
   }
@@ -81,6 +96,12 @@ export type RuntimeConfig = {
   authMode: "development" | "oidc";
   allowDemoAuth: boolean;
   allowDemoData: boolean;
+  features: {
+    encryptedRecords: boolean;
+    infrastructureApprovalRef: string | undefined;
+    securityAssessmentApprovalRef: string | undefined;
+    privacyLegalApprovalRef: string | undefined;
+  };
   oidc: { issuer: string; audience: string; jwksUrl: string; rolesClaim: string; authMethodsClaim: string } | undefined;
   oidcRealms: {
     patient: { issuer: string; audience: string; jwksUrl: string; rolesClaim: string; authMethodsClaim: string };
@@ -115,6 +136,12 @@ export function loadRuntimeConfig(source: NodeJS.ProcessEnv = process.env): Runt
     authMode: environment.AUTH_MODE,
     allowDemoAuth: environment.ALLOW_DEMO_AUTH,
     allowDemoData: environment.ALLOW_DEMO_DATA,
+    features: {
+      encryptedRecords: environment.ENABLE_ENCRYPTED_RECORDS,
+      infrastructureApprovalRef: environment.INFRASTRUCTURE_APPROVAL_REF,
+      securityAssessmentApprovalRef: environment.SECURITY_ASSESSMENT_APPROVAL_REF,
+      privacyLegalApprovalRef: environment.PRIVACY_LEGAL_APPROVAL_REF
+    },
     oidc: environment.AUTH_MODE === "oidc" && environment.OIDC_ISSUER_URL && environment.OIDC_AUDIENCE && environment.OIDC_JWKS_URL ? {
       issuer: environment.OIDC_ISSUER_URL!,
       audience: environment.OIDC_AUDIENCE!,

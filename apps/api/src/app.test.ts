@@ -6,7 +6,7 @@ import { loadRuntimeConfig } from "./config.js";
 
 describe("MWANAMKE API privacy boundary", () => {
   let app: FastifyInstance;
-  const configuration = loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true" });
+  const configuration = loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true", ENABLE_ENCRYPTED_RECORDS: "true" });
   const patientHeaders = { authorization: "Bearer dev:patient:patient-1" };
   beforeEach(async () => { app = await buildApp({ configuration }); });
   afterEach(async () => { await app.close(); });
@@ -29,6 +29,15 @@ describe("MWANAMKE API privacy boundary", () => {
     expect(JSON.stringify(returned)).not.toContain("only the client");
     await expect(decryptSensitiveRecord(returned, unrelatedServerKey)).rejects.toThrow();
     await expect(decryptSensitiveRecord(returned, clientKey)).resolves.toEqual({ privateNote: "only the client can read this" });
+  });
+
+  it("keeps encrypted records disabled until the release approvals are enabled", async () => {
+    const disabled = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true" }) });
+    try {
+      const response = await disabled.inject({ method: "POST", url: "/v1/encrypted-records", headers: patientHeaders, payload: {} });
+      expect(response.statusCode).toBe(404);
+      expect(response.json()).toEqual({ error: "FEATURE_NOT_ENABLED" });
+    } finally { await disabled.close(); }
   });
 
   it("keeps push notifications neutral", async () => {
@@ -66,7 +75,7 @@ describe("MWANAMKE API privacy boundary", () => {
 
 describe("Authorized list DTOs", () => {
   it("requires authentication, rejects oversized pages and does not return demo providers", async () => {
-    const app = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true" }) });
+    const app = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true", ENABLE_ENCRYPTED_RECORDS: "true" }) });
     try {
       expect((await app.inject({ url: "/v1/providers" })).statusCode).toBe(401);
       const headers = { authorization: "Bearer dev:patient:list-owner" };

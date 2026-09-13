@@ -34,6 +34,10 @@ jobs:
       AUDIT_SINK_URL: ${{ vars.AUDIT_SINK_URL }}
       AUDIT_SINK_TOKEN: ${{ secrets.AUDIT_SINK_TOKEN }}
       REDIS_URL: ${{ secrets.PRODUCTION_REDIS_URL }}
+      ENABLE_ENCRYPTED_RECORDS: ${{ vars.ENABLE_ENCRYPTED_RECORDS }}
+      INFRASTRUCTURE_APPROVAL_REF: ${{ vars.INFRASTRUCTURE_APPROVAL_REF }}
+      SECURITY_ASSESSMENT_APPROVAL_REF: ${{ vars.SECURITY_ASSESSMENT_APPROVAL_REF }}
+      PRIVACY_LEGAL_APPROVAL_REF: ${{ vars.PRIVACY_LEGAL_APPROVAL_REF }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
