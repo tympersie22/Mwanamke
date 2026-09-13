@@ -2,6 +2,15 @@ name: Release candidate security gate
 
 on:
   workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Protected environment containing this release candidate's configuration
+        required: true
+        default: staging-release-gate
+        type: choice
+        options:
+          - staging-release-gate
+          - production-release-gate
   push:
     tags:
       - 'v*'
@@ -15,8 +24,8 @@ concurrency:
 
 jobs:
   gate:
-    # Protect this environment with required reviewers and deployment-branch rules.
-    environment: production-release-gate
+    # Manual runs select staging or production; signed version tags always use production.
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.target_environment || 'production-release-gate' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
