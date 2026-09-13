@@ -1,0 +1,73 @@
+name: Verify MWANAMKE
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - run: npx expo-doctor
+        working-directory: apps/mobile
+      - run: npx expo install --check
+        working-directory: apps/mobile
+      - run: npm run export -w @mwanamke/mobile
+      - run: npm audit --omit=dev --audit-level=high
+
+  migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mwanamke
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: mwanamke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mwanamke"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://mwanamke:ci-only-password@127.0.0.1:5432/mwanamke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm exec -w @mwanamke/api -- prisma validate
+      - run: npm exec -w @mwanamke/api -- prisma generate
+      - run: npm exec -w @mwanamke/api -- prisma migrate deploy
+      - run: npm run test:integration -w @mwanamke/api
+
+  containers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build --file apps/api/Dockerfile --tag mwanamke-api:${{ github.sha }} .
+      - name: Build portal image
+        run: docker build --file apps/portal/Dockerfile --tag mwanamke-portal:${{ github.sha }} .

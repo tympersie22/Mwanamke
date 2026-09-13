@@ -1,0 +1,26 @@
+rules:
+  - id: browser-token-localstorage
+    languages: [javascript, typescript]
+    message: Browser persistent storage must not contain authentication tokens.
+    severity: ERROR
+    patterns:
+      - pattern: localStorage.setItem($KEY, $VALUE)
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(token|jwt|session|secret).*
+  - id: unsafe-dynamic-evaluation
+    languages: [javascript, typescript]
+    message: Dynamic code evaluation requires removal or security review.
+    severity: ERROR
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: explicit-sensitive-logging
+    languages: [javascript, typescript]
+    message: Do not log authentication or private-message values.
+    severity: ERROR
+    patterns:
+      - pattern: console.$METHOD(..., $VALUE, ...)
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: (?i)^(accessToken|refreshToken|idToken|privateMessage|plaintext|password)$

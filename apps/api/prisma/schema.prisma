@@ -1,0 +1,549 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PATIENT
+  PROVIDER
+  NAVIGATOR
+  FACILITY_ADMIN
+  PLATFORM_ADMIN
+  PROGRAMME_ADMIN
+}
+
+enum AccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  SUSPENDED
+  REJECTED
+}
+
+enum AppointmentStatus {
+  EXPIRED
+  REQUESTED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  CREATED
+  RESERVED
+  PAID
+  FAILED
+  REFUNDED
+  SPONSORED
+}
+
+enum ReviewStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  RETIRED
+}
+
+model User {
+  id                     String                  @id @default(uuid()) @db.Uuid
+  publicHandle           String                  @unique
+  role                   UserRole
+  status                 AccountStatus           @default(ACTIVE)
+  preferredLanguage      String                  @default("sw")
+  createdAt              DateTime                @default(now())
+  deletedAt              DateTime?
+  devices                Device[]
+  externalIdentities     ExternalIdentity[]
+  encryptedKeyEnvelopes  EncryptedKeyEnvelope[]
+  encryptedHealthRecords EncryptedHealthRecord[]
+  appointments           Appointment[]
+  payments               Payment[]
+  notificationPreference NotificationPreference?
+  providerProfile        Provider?
+  invitationsIssued      RoleInvitation[]        @relation("InvitationIssuer")
+  invitationsAccepted    RoleInvitation[]        @relation("InvitationRecipient")
+
+  @@index([role, createdAt])
+  @@index([status, role])
+}
+
+model ExternalIdentity {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @db.Uuid
+  issuerSubjectDigest Bytes
+  createdAt           DateTime @default(now())
+  lastAuthenticatedAt DateTime @default(now())
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issuerSubjectDigest])
+  @@index([userId])
+}
+
+model RoleInvitation {
+  id               String           @id @default(uuid()) @db.Uuid
+  emailDigest      Bytes
+  tokenDigest      Bytes            @unique
+  intendedRole     UserRole
+  status           InvitationStatus @default(PENDING)
+  issuerUserId     String           @db.Uuid
+  acceptedByUserId String?          @db.Uuid
+  createdAt        DateTime         @default(now())
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  issuer           User             @relation("InvitationIssuer", fields: [issuerUserId], references: [id], onDelete: Restrict)
+  acceptedBy       User?            @relation("InvitationRecipient", fields: [acceptedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([emailDigest, intendedRole, status])
+  @@index([expiresAt, status])
+}
+
+model Device {
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  label        String
+  attestationFormat String?
+  attestationEvidenceHash Bytes?
+  authorizedAt DateTime    @default(now())
+  revokedAt    DateTime?
+  lastSeenAt   DateTime?
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keys         DeviceKey[]
+
+  @@index([userId, revokedAt])
+}
+
+model DeviceKey {
+  id        String    @id @default(uuid()) @db.Uuid
+  deviceId  String    @db.Uuid
+  publicKey Bytes
+  algorithm String
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+  device    Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@index([deviceId, revokedAt])
+}
+
+model EncryptedKeyEnvelope {
+  id            String                  @id @default(uuid()) @db.Uuid
+  ownerUserId   String                  @db.Uuid
+  keyId         String
+  algorithm     String
+  wrappedKey    Bytes
+  nonce         Bytes
+  createdAt     DateTime                @default(now())
+  owner         User                    @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  healthRecords EncryptedHealthRecord[]
+
+  @@index([ownerUserId, createdAt])
+}
+
+model EncryptedHealthRecord {
+  id             String               @id @default(uuid()) @db.Uuid
+  ownerUserId    String               @db.Uuid
+  clientRecordId String
+  recordType     String
+  ciphertext     Bytes
+  nonce          Bytes
+  envelopeId     String               @db.Uuid
+  clientVersion  Int
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  deletedAt      DateTime?
+  owner          User                 @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  envelope       EncryptedKeyEnvelope @relation(fields: [envelopeId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerUserId, clientRecordId])
+  @@index([ownerUserId, createdAt])
+}
+
+model EncryptedDocument {
+  id                  String    @id @default(uuid()) @db.Uuid
+  ownerUserId         String    @db.Uuid
+  ciphertextObjectKey String    @unique
+  ciphertextDigest    Bytes
+  envelopeId          String    @db.Uuid
+  createdAt           DateTime  @default(now())
+  deletedAt           DateTime?
+
+  @@index([ownerUserId, createdAt])
+}
+
+model EncryptedMessage {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid
+  senderDeviceId String   @db.Uuid
+  ciphertext     Bytes
+  nonce          Bytes
+  envelopeId     String   @db.Uuid
+  sequence       BigInt
+  createdAt      DateTime @default(now())
+
+  @@unique([conversationId, sequence])
+}
+
+model ConsentGrant {
+  id                String              @id @default(uuid()) @db.Uuid
+  grantorUserId     String              @db.Uuid
+  recipientKeyId    String
+  purposeCode       String
+  encryptedManifest Bytes
+  expiresAt         DateTime
+  grantedAt         DateTime            @default(now())
+  revocations       ConsentRevocation[]
+
+  @@index([grantorUserId, expiresAt])
+}
+
+model ConsentRevocation {
+  id             String       @id @default(uuid()) @db.Uuid
+  consentGrantId String       @db.Uuid
+  revokedAt      DateTime     @default(now())
+  reasonCode     String?
+  grant          ConsentGrant @relation(fields: [consentGrantId], references: [id], onDelete: Cascade)
+
+  @@index([consentGrantId, revokedAt])
+}
+
+model Provider {
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String?                @unique @db.Uuid
+  displayName     String
+  titleEn         String
+  titleSw         String
+  specializations String[]
+  languages       String[]
+  gender          String
+  publicKey       Bytes?
+  active          Boolean                @default(false)
+  createdAt       DateTime               @default(now())
+  verifications   ProviderVerification[]
+  services        ProviderService[]
+  availability    AvailabilitySlot[]
+  appointments    Appointment[]
+  user            User?                  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([active, gender])
+}
+
+model ProviderVerification {
+  id               String             @id @default(uuid()) @db.Uuid
+  providerId       String             @db.Uuid
+  status           VerificationStatus @default(PENDING)
+  authorityCode    String
+  credentialDigest Bytes
+  reviewerId       String?            @db.Uuid
+  reviewedAt       DateTime?
+  expiresAt        DateTime?
+  provider         Provider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
+}
+
+model Facility {
+  id              String        @id @default(uuid()) @db.Uuid
+  countryCode     String
+  regionCode      String
+  nameEn          String
+  nameSw          String
+  locality        String
+  latitudeApprox  Decimal?      @db.Decimal(7, 3)
+  longitudeApprox Decimal?      @db.Decimal(7, 3)
+  accessibilityEn String?
+  accessibilitySw String?
+  verified        Boolean       @default(false)
+  services        Service[]
+  appointments    Appointment[]
+
+  @@index([countryCode, regionCode, verified])
+}
+
+model ProviderService {
+  providerId String @db.Uuid
+  serviceId String @db.Uuid
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  @@id([providerId, serviceId])
+}
+
+model Service {
+  id           String        @id @default(uuid()) @db.Uuid
+  facilityId   String        @db.Uuid
+  code         String
+  nameEn       String
+  nameSw       String
+  mode         String
+  priceTzs     Int
+  active       Boolean       @default(true)
+  facility     Facility      @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  providers    ProviderService[]
+
+  @@index([facilityId, active])
+}
+
+model Appointment {
+  id                 String            @id @default(uuid()) @db.Uuid
+  userId             String            @db.Uuid
+  providerId         String            @db.Uuid
+  facilityId         String?           @db.Uuid
+  serviceId          String            @db.Uuid
+  availabilitySlotId String            @db.Uuid
+  idempotencyKey     String
+  startsAt           DateTime
+  mode               String
+  status             AppointmentStatus @default(REQUESTED)
+  holdExpiresAt      DateTime?
+  amountTzs          Int               @default(0)
+  timeZone           String            @default("Africa/Dar_es_Salaam")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  user               User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  provider           Provider          @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  facility           Facility?         @relation(fields: [facilityId], references: [id], onDelete: Restrict)
+  service            Service           @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  availabilitySlot   AvailabilitySlot  @relation(fields: [availabilitySlotId], references: [id], onDelete: Restrict)
+  payments           Payment[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, startsAt])
+  @@index([providerId, startsAt, status])
+}
+
+model AvailabilitySlot {
+  id          String       @id @default(uuid()) @db.Uuid
+  providerId  String       @db.Uuid
+  startsAt    DateTime
+  endsAt      DateTime
+  mode        String
+  reservedAt  DateTime?
+  provider    Provider     @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@unique([providerId, startsAt, mode])
+}
+
+model Referral {
+  id                       String   @id @default(uuid()) @db.Uuid
+  appointmentId            String?  @db.Uuid
+  userId                   String   @db.Uuid
+  destinationFacilityId    String   @db.Uuid
+  operationalStatus        String
+  encryptedClinicalPackage Bytes
+  createdAt                DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model LaboratoryOrder {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  facilityId       String   @db.Uuid
+  serviceCode      String
+  status           String
+  resultDocumentId String?  @db.Uuid
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model PharmacyRequest {
+  id                      String   @id @default(uuid()) @db.Uuid
+  userId                  String   @db.Uuid
+  pharmacyFacilityId      String   @db.Uuid
+  encryptedPrescriptionId String   @db.Uuid
+  status                  String
+  createdAt               DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Payment {
+  id               String        @id @default(uuid()) @db.Uuid
+  appointmentId    String?       @db.Uuid
+  userId           String        @db.Uuid
+  amountMinor      Int
+  currency         String        @default("TZS")
+  adapterCode      String
+  adapterReference String?       @unique
+  idempotencyKey   String
+  status           PaymentStatus @default(CREATED)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  user             User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  appointment      Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  topic         String
+  aggregateType String
+  aggregateId   String
+  eventKey      String    @unique
+  payloadSafe   Json
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  availableAt   DateTime  @default(dbgenerated("CURRENT_TIMESTAMP"))
+  lockedAt      DateTime?
+  lockedBy      String?
+  deliveredAt   DateTime?
+  lastErrorCode String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, availableAt, createdAt])
+  @@index([aggregateType, aggregateId])
+}
+
+model SponsorEntitlement {
+  id                  String   @id @default(uuid()) @db.Uuid
+  userId              String   @db.Uuid
+  programmeCode       String
+  coveredServiceCodes String[]
+  startsAt            DateTime
+  expiresAt           DateTime
+  remainingMinor      Int?
+
+  @@index([userId, expiresAt])
+}
+
+model CareNavigatorAssignment {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  navigatorUserId String    @db.Uuid
+  status          String
+  assignedAt      DateTime  @default(now())
+  endedAt         DateTime?
+
+  @@index([navigatorUserId, status])
+}
+
+model SafetyContact {
+  id               String   @id @default(uuid()) @db.Uuid
+  ownerUserId      String   @db.Uuid
+  encryptedPayload Bytes
+  nonce            Bytes
+  envelopeId       String   @db.Uuid
+  createdAt        DateTime @default(now())
+
+  @@index([ownerUserId, createdAt])
+}
+
+model EmergencyEvent {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  eventType         String
+  operationalStatus String
+  encryptedContext  Bytes?
+  createdAt         DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @unique @db.Uuid
+  neutralOnly Boolean @default(true)
+  pushEnabled Boolean @default(false)
+  smsEnabled  Boolean @default(false)
+  quietStart  String?
+  quietEnd    String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  actorRef     String
+  action       String
+  targetRef    String?
+  metadataSafe Json
+  previousHash Bytes?
+  eventHash    Bytes    @unique
+  occurredAt   DateTime @default(now())
+
+  @@index([occurredAt, action])
+}
+
+model ClinicalContent {
+  id         String                  @id @default(uuid()) @db.Uuid
+  contentKey String
+  version    Int
+  language   String
+  body       String
+  source     String
+  status     ReviewStatus            @default(DRAFT)
+  createdAt  DateTime                @default(now())
+  reviews    ClinicalContentReview[]
+
+  @@unique([contentKey, version, language])
+}
+
+model ClinicalContentReview {
+  id             String          @id @default(uuid()) @db.Uuid
+  contentId      String          @db.Uuid
+  reviewerUserId String          @db.Uuid
+  status         ReviewStatus
+  notes          String?
+  reviewedAt     DateTime        @default(now())
+  content        ClinicalContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId, reviewedAt])
+}
+
+model CountryConfiguration {
+  id                     String   @id @default(uuid()) @db.Uuid
+  countryCode            String
+  jurisdictionCode       String
+  currency               String
+  emergencyNumbers       Json
+  enabledPaymentAdapters String[]
+  enabledChannels        String[]
+  active                 Boolean  @default(false)
+
+  @@unique([countryCode, jurisdictionCode])
+}
+
+model LanguageResource {
+  id           String       @id @default(uuid()) @db.Uuid
+  locale       String
+  namespace    String
+  resourceKey  String
+  value        String
+  version      Int
+  reviewStatus ReviewStatus @default(DRAFT)
+
+  @@unique([locale, namespace, resourceKey, version])
+}
+
+model PrivacyRequest {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  kind String
+  status String @default("submitted")
+  idempotencyKey String
+  createdAt DateTime @default(dbgenerated("CURRENT_TIMESTAMP"))
+  @@unique([userId, idempotencyKey])
+  @@index([userId, id])
+}

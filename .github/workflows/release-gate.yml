@@ -1,0 +1,64 @@
+name: Release candidate security gate
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    # Protect this environment with required reviewers and deployment-branch rules.
+    environment: production-release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NODE_ENV: production
+      APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+      DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+      OIDC_PATIENT_ISSUER_URL: ${{ vars.OIDC_PATIENT_ISSUER_URL }}
+      OIDC_PATIENT_AUDIENCE: ${{ vars.OIDC_PATIENT_AUDIENCE }}
+      OIDC_PATIENT_JWKS_URL: ${{ vars.OIDC_PATIENT_JWKS_URL }}
+      OIDC_WORKFORCE_ISSUER_URL: ${{ vars.OIDC_WORKFORCE_ISSUER_URL }}
+      OIDC_WORKFORCE_AUDIENCE: ${{ vars.OIDC_WORKFORCE_AUDIENCE }}
+      OIDC_WORKFORCE_JWKS_URL: ${{ vars.OIDC_WORKFORCE_JWKS_URL }}
+      IDENTITY_SUBJECT_HMAC_KEY: ${{ secrets.IDENTITY_SUBJECT_HMAC_KEY }}
+      AUDIT_HMAC_KEY: ${{ secrets.AUDIT_HMAC_KEY }}
+      AUDIT_SINK_URL: ${{ vars.AUDIT_SINK_URL }}
+      AUDIT_SINK_TOKEN: ${{ secrets.AUDIT_SINK_TOKEN }}
+      REDIS_URL: ${{ secrets.PRODUCTION_REDIS_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate production boundaries
+        run: node scripts/production/preflight.mjs
+      - name: Run application verification
+        run: npm run verify
+      - name: Run mobile export verification
+        run: npm run export -w @mwanamke/mobile
+      - name: Run dependency audit
+        run: npm audit --omit=dev --audit-level=high
+      - name: Run secrets, SAST and filesystem scans
+        run: bash scripts/release/security-scan-docker.sh
+      - name: Run clean, upgrade and restore drill
+        run: bash scripts/validation/postgres-drill.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-evidence-${{ github.sha }}
+          path: |
+            artifacts/security
+            /tmp/mwanamke-*.log
+          if-no-files-found: ignore
+          retention-days: 30

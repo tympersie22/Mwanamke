@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mwanamke
+      POSTGRES_PASSWORD: mwanamke
+      POSTGRES_DB: mwanamke
+    ports: ["55432:5432"]
+    volumes: ["mwanamke_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mwanamke"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    command: ["sh", "-c", "npm run prisma:migrate -w @mwanamke/api && npm run prisma:seed -w @mwanamke/api"]
+    environment: &api-environment
+      NODE_ENV: development
+      DATABASE_URL: postgresql://mwanamke:mwanamke@postgres:5432/mwanamke
+      STATE_STORE: postgres
+      AUTH_MODE: development
+      ALLOW_DEMO_AUTH: "true"
+      ALLOW_DEMO_DATA: "true"
+      IDENTITY_SUBJECT_HMAC_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      PAYMENT_ADAPTER: mock
+      NOTIFICATION_ADAPTER: mock
+      TELECONSULT_ADAPTER: disabled
+      BLOODMATCH_ADAPTER: disabled
+      APP_ORIGIN: http://localhost:3300
+      LOG_LEVEL: info
+      TRUST_PROXY: "false"
+      OUTBOX_POLL_MS: 250
+      OUTBOX_MAX_ATTEMPTS: 8
+      WORKER_ID: worker-local
+    depends_on:
+      postgres:
+        condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    environment: *api-environment
+    ports: ["4100:4100"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4100/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+  worker:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: ["node", "dist/worker.js"]
+    environment:
+      <<: *api-environment
+      WORKER_ID: worker-local-1
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      disable: true
+  portal:
+    build:
+      context: .
+      dockerfile: apps/portal/Dockerfile
+    environment:
+      API_BASE_URL: http://api:4100
+      API_INTERNAL_TRANSPORT: trusted-private-network
+      PORTAL_ORIGIN: http://localhost:3300
+      PORTAL_SESSION_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      ALLOW_DEMO_AUTH: "true"
+      MWANAMKE_LOCAL_DEMO: "true"
+      ENABLE_REVIEW_SURFACE: "true"
+    ports: ["3300:3000"]
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  mwanamke_pg:

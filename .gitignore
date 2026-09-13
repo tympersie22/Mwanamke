@@ -1,0 +1,29 @@
+node_modules
+.next
+dist
+.expo
+*.tsbuildinfo
+.env
+.env.*
+coverage
+*.log
+.DS_Store
+screenshots/*.png
+!screenshots/.gitkeep
+
+# Local signing, store credentials, database backups and release binaries.
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+credentials.json
+service-account*.json
+*.ipa
+*.aab
+*.apk
+*.xcarchive/
+*.dump
+*.backup
+# Release binaries, scan reports and signing material are never source files.
+artifacts/

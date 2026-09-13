@@ -1,0 +1,12 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Generated dependencies/build outputs only; source and untracked files remain scanned"
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)dist/''',
+  '''(^|/)artifacts/''',
+  '''(^|/)\.expo/'''
+]
