@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { PatientSpace, type PatientView } from "./PatientSpace";
 import {
+  Baby,
   ArrowRight,
   BarChart3,
   CalendarDays,
@@ -257,8 +259,9 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
       const result = await response.json();
       if (!active) return;
       setActor(result.data);
-      const endpoint = result.data.role === "provider" ? "appointments" : result.data.role === "navigator" ? "navigator/assignments" : result.data.role.endsWith("admin") ? "admin/aggregate" : "providers";
-      void load(endpoint);
+      const endpoint = result.data.role === "provider" ? "appointments" : result.data.role === "navigator" ? "navigator/assignments" : result.data.role.endsWith("admin") ? "admin/aggregate" : "personal";
+      if (endpoint === "personal") setPath(endpoint);
+      else void load(endpoint);
     }).catch((reason) => {
       if (active) setError(reason.message);
     });
@@ -285,6 +288,15 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     setProvider(nextProvider);
     setService(nextService);
     setNotice("");
+    if (["personal", "cycle", "pregnancy"].includes(endpoint)) {
+      requestSequence.current += 1;
+      setPath(endpoint);
+      setRows([]);
+      setCursor(null);
+      setBusy(false);
+      setError("");
+      return;
+    }
     void load(endpoint);
   };
 
@@ -365,7 +377,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
   }[name] ?? t("Kipimo cha mfumo", "System metric"));
 
   let navItems: Array<[string, string]> = [];
-  if (actor?.role === "patient") navItems = [["providers", t("Tafuta huduma", "Find care")], ["appointments", t("Miadi", "Appointments")], ["payments", t("Malipo", "Payments")]];
+  if (actor?.role === "patient") navItems = [["personal", t("Leo", "Today")], ["cycle", t("Mzunguko", "Cycle")], ["pregnancy", t("Ujauzito", "Pregnancy")], ["providers", t("Huduma", "Care")], ["appointments", t("Miadi", "Appointments")], ["payments", t("Malipo", "Payments")]];
   else if (actor?.role === "provider") navItems = [["appointments", t("Ratiba", "Schedule")], ["providers", t("Orodha ya huduma", "Care directory")]];
   else if (actor?.role === "navigator") navItems = [["navigator/assignments", t("Kazi", "Assignments")], ["providers", t("Orodha ya huduma", "Care directory")]];
   else if (actor) navItems = [["admin/aggregate", t("Muhtasari", "Overview")]];
@@ -393,6 +405,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     ? [...rows].sort((first, second) => Date.parse(first.startsAt ?? "") - Date.parse(second.startsAt ?? ""))
     : rows;
   const roleClass = actor?.role?.endsWith("admin") ? "admin" : actor?.role ?? "loading";
+  const isPatientSpace = actor?.role === "patient" && ["personal", "cycle", "pregnancy"].includes(path);
   const workspaceLabel = path === "privacy/requests"
     ? t("Mipangilio ya akaunti", "Account controls")
     : path === "admin/aggregate"
@@ -415,7 +428,13 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
       : actor?.role?.endsWith("admin")
         ? <BarChart3 aria-hidden="true" />
         : <HeartHandshake aria-hidden="true" />;
-  const navIcon = (endpoint: string) => endpoint === "providers"
+  const navIcon = (endpoint: string) => endpoint === "personal"
+    ? <HeartHandshake aria-hidden="true" />
+    : endpoint === "cycle"
+      ? <RefreshCw aria-hidden="true" />
+      : endpoint === "pregnancy"
+        ? <Baby aria-hidden="true" />
+        : endpoint === "providers"
     ? <Stethoscope aria-hidden="true" />
     : endpoint === "appointments"
       ? <CalendarDays aria-hidden="true" />
@@ -478,6 +497,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
               <p className="live-sidebar-note"><ShieldCheck aria-hidden="true" /> {t("Taarifa kutoka kwenye akaunti yako pekee.", "Information authorized for your account only.")}</p>
             </aside>
             <div className="live-workspace">
+              {isPatientSpace ? <PatientSpace language={language} view={path as PatientView} onNavigate={(next) => navigate(next)} onOpenAppointments={() => navigate("appointments")} onBrowseCare={() => navigate("providers")} /> : <>
               <section className="live-dashboard-intro">
                 <span className="live-dashboard-icon">{roleIcon}</span>
                 <div className="live-dashboard-copy"><div className="live-kicker">{t("Karibu tena", "Welcome back")}</div><h1>{roleExperience.title}</h1><p>{roleExperience.description}</p></div>
@@ -511,6 +531,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
                 {path === "admin/aggregate" && Object.keys(metrics).length > 0 ? <><dl className="live-metric-grid">{["activeMembers", "facilities", "appointmentCompletionRate"].map((name) => { const value = metrics[name]; return <div className="live-card" key={name}><dt>{metricLabel(name)}</dt><dd>{name === "appointmentCompletionRate" ? new Intl.NumberFormat(language === "sw" ? "sw-TZ" : "en-GB", { style: "percent", maximumFractionDigits: 1 }).format(value ?? 0) : (value ?? 0).toLocaleString(language === "sw" ? "sw-TZ" : "en-GB")}</dd></div>; })}</dl><div className="live-data-boundary"><LockKeyhole aria-hidden="true" /><div><strong>{t("Mipaka ya taarifa", "Data boundary")}</strong><p>{t("Dashibodi hii inaonyesha vipimo vitatu vya jumla pekee. Rekodi binafsi za wagonjwa hazipatikani kwenye njia hii.", "This dashboard exposes only three aggregate measures. Individual patient records are unavailable on this route.")}</p></div></div></> : null}
                 {cursor ? <Button className="live-load-more" disabled={busy} onClick={() => void load(path, cursor)}>{t("Onyesha zaidi", "Load more")}</Button> : null}
               </section>
+              </>}
             </div>
           </div>
         )}

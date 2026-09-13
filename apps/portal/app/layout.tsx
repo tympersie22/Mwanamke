@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DM_Sans, Newsreader } from "next/font/google";
 import "./globals.css";
+import "./patient-space.css";
 
 const uiFont = DM_Sans({ subsets: ["latin"], variable: "--font-ui", display: "swap" });
 const displayFont = Newsreader({ subsets: ["latin"], variable: "--font-display", display: "swap" });

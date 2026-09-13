@@ -1,0 +1,194 @@
+.patient-space { --patient-plum: #5d3456; --patient-rose: #d98576; --patient-blush: #f9e8e3; --patient-lilac: #eee9f4; --patient-mint: #dceddf; color: var(--ink); }
+.patient-enter { animation: patient-enter 520ms cubic-bezier(.2,.75,.25,1) backwards; }
+@keyframes patient-enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.patient-page-head { margin-bottom: 26px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.patient-page-head h1 { margin: 7px 0 6px; font-size: clamp(2.5rem,5vw,4.25rem); line-height: .96; }
+.patient-page-head p { margin: 0; }
+.patient-eyebrow { display: flex; align-items: center; gap: 7px; color: var(--patient-plum) !important; font-size: .69rem !important; font-weight: 820; letter-spacing: .095em; text-transform: uppercase; }
+.patient-eyebrow svg { width: 15px; height: 15px; }
+.patient-primary-action, .patient-save { min-height: 48px; padding: 0 17px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 13px; color: #fff; background: var(--patient-plum); cursor: pointer; font-weight: 780; transition: transform 160ms ease, box-shadow 160ms ease; }
+.patient-primary-action:hover, .patient-save:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgb(93 52 86 / 19%); }
+.patient-primary-action svg, .patient-save svg { width: 17px; }
+.patient-private-badge { min-height: 38px; padding: 0 12px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid #d8cbd5; border-radius: 999px; color: var(--patient-plum); background: rgb(255 255 255 / 66%); font-size: .7rem; font-weight: 800; }
+.patient-private-badge svg { width: 15px; }
+.patient-stage-picker { margin-bottom: 16px; padding: 5px; display: flex; gap: 4px; overflow-x: auto; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+.patient-stage-picker button { min-width: max-content; min-height: 42px; padding: 0 14px; border: 0; border-radius: 11px; color: var(--ink-soft); background: transparent; cursor: pointer; font-size: .73rem; font-weight: 760; }
+.patient-stage-picker button[aria-selected="true"] { color: #fff; background: var(--patient-plum); box-shadow: 0 5px 14px rgb(93 52 86 / 17%); }
+.patient-stage-hero { min-height: 315px; margin-bottom: 18px; padding: 34px; display: grid; grid-template-columns: minmax(0,1.2fr) minmax(190px,.7fr); align-items: center; gap: 20px; position: relative; overflow: hidden; border-radius: 30px 30px 30px 9px; background: linear-gradient(135deg,#f6ded8 0%,#f1d5d6 48%,#e3cbdc 100%); box-shadow: 0 22px 65px rgb(93 52 86 / 12%); }
+.patient-stage-hero.stage-pregnancy { background: linear-gradient(135deg,#dcece1,#cadfd6 55%,#c8d9e4); }
+.patient-stage-hero.stage-postpartum { background: linear-gradient(135deg,#eee4d6,#e4d5c5 58%,#ded4e7); }
+.patient-stage-hero.stage-perimenopause { background: linear-gradient(135deg,#e8e2ef,#d9d0e5 55%,#d5e3e1); }
+.patient-stage-copy { z-index: 1; align-self: start; }
+.patient-stage-copy > p { margin: 0 0 24px; color: var(--patient-plum); font-size: .7rem; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+.patient-stage-copy h2 { max-width: 500px; margin: 0 0 10px; color: #41253c; font-size: clamp(2.5rem,5vw,4.7rem); }
+.patient-stage-copy > span { max-width: 48ch; display: block; color: #624c5d; font-size: .86rem; line-height: 1.55; }
+.patient-stage-copy button { min-height: 44px; margin-top: 25px; padding: 0; display: inline-flex; align-items: center; gap: 10px; border: 0; color: #41253c; background: transparent; cursor: pointer; font-weight: 820; }
+.patient-stage-copy button svg { width: 18px; transition: transform 160ms ease; }
+.patient-stage-copy button:hover svg { transform: translateX(4px); }
+.patient-stage-visual { min-height: 210px; display: grid; place-items: center; position: relative; }
+.patient-stage-ring { width: 174px; height: 174px; display: grid; place-items: center; border: 1px solid rgb(255 255 255 / 80%); border-radius: 50%; box-shadow: 0 0 0 23px rgb(255 255 255 / 18%), 0 0 0 49px rgb(255 255 255 / 11%); animation: patient-float 4.5s ease-in-out infinite; }
+.patient-stage-ring span { width: 82px; height: 82px; display: grid; place-items: center; border-radius: 50%; color: var(--patient-plum); background: rgb(255 255 255 / 70%); backdrop-filter: blur(8px); }
+.patient-stage-ring svg { width: 33px; height: 33px; }
+@keyframes patient-float { 50% { transform: translateY(-7px) scale(1.025); } }
+.patient-stage-visual > i { width: 13px; height: 13px; position: absolute; top: 21px; right: 22%; border-radius: 50%; background: rgb(255 255 255 / 55%); animation: patient-pulse 2.8s ease-in-out infinite; }
+.patient-stage-visual > i:last-child { width: 8px; height: 8px; inset: auto auto 15px 16%; animation-delay: .8s; }
+@keyframes patient-pulse { 50% { opacity: .35; transform: scale(1.7); } }
+.patient-stage-metric { min-height: 70px; padding: 15px 18px; display: flex; flex-direction: column; justify-content: center; position: absolute; right: 24px; bottom: 22px; border: 1px solid rgb(255 255 255 / 65%); border-radius: 15px; background: rgb(255 255 255 / 55%); backdrop-filter: blur(12px); }
+.patient-stage-metric small { margin-bottom: 4px; color: #735d6d; font-size: .63rem; }
+.patient-stage-metric strong { color: #41253c; font-size: .76rem; }
+.patient-home-grid { display: grid; grid-template-columns: minmax(0,1.25fr) minmax(280px,.75fr); gap: 18px; }
+.patient-card { min-height: 0; border-radius: 20px; }
+.patient-card-heading { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.patient-card-heading h3 { margin: 5px 0 0; font-family: var(--font-display),Georgia,serif; font-size: 1.65rem; }
+.patient-card-heading > span { color: var(--ink-soft); font-size: .7rem; }
+.patient-checkin { padding: 27px; }
+.patient-log-section { width: 100%; padding: 20px 0; border-top: 1px solid var(--line); }
+.patient-log-section:first-of-type { margin-top: 20px; }
+.patient-log-label { margin-bottom: 12px; display: flex; align-items: center; gap: 7px; color: var(--ink); font-size: .73rem; font-weight: 800; }
+.patient-log-label svg { width: 16px; color: var(--patient-plum); }
+.patient-choice-row, .patient-mood-row, .patient-chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.patient-choice-row button, .patient-chip-row button { min-height: 39px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-soft); background: var(--surface-warm); cursor: pointer; font-size: .7rem; font-weight: 720; }
+.patient-choice-row button[aria-pressed="true"], .patient-chip-row button[aria-pressed="true"] { border-color: #b890aa; color: var(--patient-plum); background: var(--patient-blush); box-shadow: inset 0 0 0 1px rgb(93 52 86 / 8%); }
+.patient-chip-row svg { width: 13px; }
+.patient-mood-row { display: grid; grid-template-columns: repeat(4,1fr); }
+.patient-mood-row button { min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1px solid var(--line); border-radius: 13px; color: var(--ink-soft); background: var(--surface-warm); cursor: pointer; font-size: .65rem; }
+.patient-mood-row button span { color: var(--patient-plum); font-size: 1.4rem; line-height: 1; }
+.patient-mood-row button[aria-pressed="true"] { border-color: #b890aa; color: var(--patient-plum); background: var(--patient-blush); transform: translateY(-2px); }
+.patient-save { width: 100%; margin-top: 2px; }
+.patient-local-note { margin: 12px 0 0 !important; display: flex; align-items: flex-start; gap: 7px; font-size: .65rem !important; }
+.patient-local-note svg { width: 14px; margin-top: 2px; }
+.patient-home-side { display: grid; gap: 14px; }
+.patient-insight-card { padding: 24px; background: #f4f0f6; border-color: #ddd2e2; }
+.patient-insight-icon { width: 45px; height: 45px; margin-bottom: 24px; display: grid; place-items: center; border-radius: 14px; color: var(--patient-plum); background: #fff; }
+.patient-insight-icon svg { width: 21px; }
+.patient-insight-card h3 { font-family: var(--font-display),Georgia,serif; font-size: 1.35rem; }
+.patient-insight-card p:not(.patient-eyebrow) { font-size: .74rem; }
+.patient-insight-card button, .patient-next-visit button { min-height: 42px; margin-top: auto; padding: 0; display: inline-flex; align-items: center; gap: 7px; border: 0; color: var(--patient-plum); background: transparent; cursor: pointer; font-size: .72rem; font-weight: 820; }
+.patient-insight-card button svg, .patient-next-visit button svg { width: 16px; }
+.patient-care-card { min-height: 106px; padding: 18px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 13px; }
+.patient-care-card > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: var(--patient-plum); background: var(--patient-blush); }
+.patient-care-card > span svg { width: 19px; }
+.patient-care-card h3 { margin: 4px 0; font-family: var(--font-display),Georgia,serif; font-size: 1.1rem; }
+.patient-care-card p { margin: 0; font-size: .68rem; }
+.patient-care-card > button { width: 44px; height: 44px; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--patient-plum); background: transparent; cursor: pointer; }
+.patient-care-card > button:hover { background: var(--patient-blush); }
+.patient-privacy-strip { padding: 15px 17px; display: flex; align-items: flex-start; gap: 11px; border: 1px solid #cbded7; border-radius: 16px; background: #eef7f3; }
+.patient-privacy-strip > svg { width: 18px; color: var(--brand); }
+.patient-privacy-strip strong { display: block; margin-bottom: 3px; font-size: .7rem; }
+.patient-privacy-strip p { margin: 0; font-size: .65rem; line-height: 1.45; }
+.patient-cycle-grid { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(260px,.7fr); gap: 18px; }
+.patient-calendar { padding: 27px; }
+.patient-month-buttons { display: flex; gap: 5px; }
+.patient-month-buttons button { width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; font-size: 1.35rem; }
+.patient-month-buttons button:disabled { opacity: .35; cursor: not-allowed; }
+.patient-weekdays, .patient-days { width: 100%; display: grid; grid-template-columns: repeat(7,1fr); gap: 7px; }
+.patient-weekdays { margin: 24px 0 10px; }
+.patient-weekdays span { color: var(--ink-soft); text-align: center; font-size: .64rem; font-weight: 800; }
+.patient-days > span, .patient-days button { aspect-ratio: 1; min-width: 0; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--ink); background: transparent; cursor: pointer; font-size: .73rem; position: relative; }
+.patient-days button:hover { background: var(--surface-warm); }
+.patient-days button.is-recorded { color: #fff; background: var(--patient-rose); }
+.patient-days button.is-fertile { background: var(--patient-mint); }
+.patient-days button.is-estimated { border: 1px dashed var(--patient-rose); }
+.patient-days button.is-today::after { content: ""; width: 5px; height: 5px; position: absolute; bottom: 4px; border-radius: 50%; background: var(--patient-plum); }
+.patient-days button.is-selected { outline: 2px solid var(--patient-plum); outline-offset: 2px; }
+.patient-calendar-key { margin-top: 24px; padding-top: 18px; display: flex; flex-wrap: wrap; gap: 10px 18px; border-top: 1px solid var(--line); }
+.patient-calendar-key span { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: .64rem; }
+.patient-calendar-key i { width: 10px; height: 10px; border-radius: 50%; }
+.patient-calendar-key i.recorded { background: var(--patient-rose); }
+.patient-calendar-key i.fertile { background: var(--patient-mint); }
+.patient-calendar-key i.estimated { border: 1px dashed var(--patient-rose); }
+.patient-cycle-summary { display: grid; gap: 14px; }
+.patient-cycle-day { min-height: 150px; padding: 20px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 16px; }
+.patient-orbit { width: 76px; height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 7px solid var(--patient-blush); border-top-color: var(--patient-rose); border-radius: 50%; }
+.patient-orbit strong { font-size: 1.25rem; }
+.patient-orbit small { font-size: .58rem; }
+.patient-cycle-day h3 { margin: 4px 0; font-family: var(--font-display),Georgia,serif; }
+.patient-cycle-day p { margin: 0; font-size: .67rem; line-height: 1.45; }
+.patient-mini-stats { padding: 0; display: grid; grid-template-columns: repeat(3,1fr); }
+.patient-mini-stats div { min-width: 0; padding: 18px 10px; display: flex; flex-direction: column; gap: 5px; text-align: center; }
+.patient-mini-stats div + div { border-left: 1px solid var(--line); }
+.patient-mini-stats span { color: var(--patient-plum); font-family: var(--font-display),Georgia,serif; font-size: 1.55rem; }
+.patient-mini-stats small { color: var(--ink-soft); font-size: .57rem; line-height: 1.35; }
+.patient-pattern { min-height: 180px; padding: 20px; }
+.patient-bars { width: 100%; height: 72px; margin-top: auto; display: flex; align-items: flex-end; gap: 7px; }
+.patient-bars span { flex: 1; border-radius: 5px 5px 2px 2px; background: linear-gradient(#bd93b3,#eadce7); animation: patient-bars 650ms cubic-bezier(.2,.75,.25,1) both; transform-origin: bottom; }
+@keyframes patient-bars { from { transform: scaleY(.05); } }
+.patient-disclaimer { margin-top: 14px; padding: 13px 15px; display: flex; align-items: flex-start; gap: 9px; border-radius: 13px; color: var(--ink-soft); background: #f1eee7; font-size: .68rem; }
+.patient-disclaimer svg { width: 16px; flex: 0 0 auto; }
+.patient-pregnancy-hero { min-height: 275px; margin-bottom: 18px; padding: 34px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 30px; overflow: hidden; border-radius: 30px 30px 30px 9px; color: #163b37; background: linear-gradient(135deg,#dcece1,#c7ddd5 58%,#c5dbe2); }
+.patient-pregnancy-copy > span { color: var(--brand-strong); font-size: .68rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.patient-pregnancy-copy h2 { margin: 13px 0 9px; color: #163b37; font-size: clamp(2.6rem,5vw,4.4rem); }
+.patient-pregnancy-copy p { margin: 0 0 18px; color: #3d5d57; }
+.patient-pregnancy-copy p strong { color: #163b37; }
+.patient-pregnancy-copy small { max-width: 50ch; display: block; color: #58716c; font-size: .65rem; line-height: 1.45; }
+.patient-pregnancy-ring { width: 174px; height: 174px; padding: 12px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--brand) 61%,rgb(255 255 255 / 45%) 0); animation: patient-ring 800ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes patient-ring { from { transform: scale(.75) rotate(-25deg); opacity: 0; } }
+.patient-pregnancy-ring > div { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: #edf7f2; }
+.patient-pregnancy-ring svg { width: 24px; color: var(--brand); }
+.patient-pregnancy-ring strong { margin-top: 4px; font-family: var(--font-display),Georgia,serif; font-size: 1.65rem; }
+.patient-pregnancy-ring small { font-size: .6rem; }
+.patient-pregnancy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.patient-next-visit, .patient-today-list, .patient-care-plan { padding: 25px; }
+.patient-next-visit .patient-card-heading > span { padding: 6px 9px; border-radius: 999px; color: var(--brand-strong); background: var(--brand-soft); font-weight: 800; }
+.patient-next-visit > p { margin: 19px 0 4px; font-size: .77rem; }
+.patient-next-visit > strong { font-size: .72rem; }
+.patient-today-list ul { width: 100%; margin: 14px 0 0; padding: 0; list-style: none; }
+.patient-today-list li { padding: 12px 0; display: flex; align-items: center; gap: 11px; border-top: 1px solid var(--line); }
+.patient-today-list li > svg { width: 17px; color: var(--brand); }
+.patient-today-list li span { display: flex; flex-direction: column; gap: 3px; }
+.patient-today-list li strong { font-size: .72rem; }
+.patient-today-list li small { color: var(--ink-soft); font-size: .62rem; }
+.patient-care-plan { margin-top: 18px; }
+.patient-care-plan .patient-card-heading > strong { color: var(--brand); font-family: var(--font-display),Georgia,serif; font-size: 1.7rem; }
+.patient-progress-track { width: 100%; height: 8px; margin: 25px 0 13px; overflow: hidden; border-radius: 99px; background: #e8eeeb; }
+.patient-progress-track span { height: 100%; display: block; border-radius: inherit; background: var(--brand); animation: patient-progress 800ms ease both; transform-origin: left; }
+@keyframes patient-progress { from { transform: scaleX(0); } }
+.patient-milestones { display: grid; grid-template-columns: repeat(8,1fr); gap: 6px; }
+.patient-milestones span { min-height: 30px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; color: var(--ink-soft); font-size: .61rem; }
+.patient-milestones span.done { border-color: #b8d4c9; color: var(--brand-strong); background: var(--brand-soft); }
+.patient-care-plan > p { margin: 16px 0 0; font-size: .65rem; }
+.patient-danger-card { margin-top: 18px; padding: 22px 24px; display: flex; align-items: center; justify-content: space-between; gap: 25px; border: 1px solid #e5bdb6; border-radius: 20px; background: #fff3f0; }
+.patient-danger-card > div { display: flex; align-items: flex-start; gap: 15px; }
+.patient-danger-card > div > span { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; color: var(--danger); background: #fff; }
+.patient-danger-card h3 { margin: 4px 0; font-family: var(--font-display),Georgia,serif; font-size: 1.25rem; }
+.patient-danger-card p:not(.patient-eyebrow) { max-width: 70ch; margin: 0; font-size: .68rem; }
+.patient-danger-card > button { min-width: max-content; min-height: 46px; padding: 0 15px; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 12px; color: #fff; background: var(--danger); cursor: pointer; font-size: .72rem; font-weight: 800; }
+.patient-danger-card > button svg { width: 16px; }
+.patient-sheet-backdrop { position: fixed; inset: 0; z-index: 600; padding: 20px; display: grid; place-items: center; background: rgb(15 30 28 / 61%); backdrop-filter: blur(4px); }
+.patient-sheet { width: min(100%,480px); padding: 31px; border-radius: 24px; background: #fff; box-shadow: var(--shadow-lg); animation: patient-enter 240ms ease both; }
+.patient-sheet > span { width: 51px; height: 51px; display: grid; place-items: center; border-radius: 16px; color: var(--danger); background: var(--danger-soft); }
+.patient-sheet h2 { margin: 20px 0 10px; font-size: 2rem; }
+.patient-sheet p { font-size: .82rem; }
+.patient-sheet > div { margin-top: 22px; display: flex; gap: 8px; }
+.patient-sheet button { min-height: 46px; padding: 0 15px; border: 1px solid var(--line); border-radius: 12px; background: #fff; cursor: pointer; font-weight: 760; }
+.patient-sheet button.patient-sheet-primary { border-color: var(--danger); color: #fff; background: var(--danger); }
+
+@media (max-width: 900px) {
+  .patient-home-grid, .patient-cycle-grid { grid-template-columns: 1fr; }
+  .patient-home-side { grid-template-columns: 1fr 1fr; }
+  .patient-privacy-strip { grid-column: 1 / -1; }
+}
+@media (max-width: 620px) {
+  .patient-page-head { align-items: flex-start; flex-direction: column; }
+  .patient-page-head h1 { font-size: 2.7rem; }
+  .patient-page-head .patient-primary-action { width: 100%; }
+  .patient-stage-hero { min-height: 430px; padding: 26px 22px; grid-template-columns: 1fr; align-items: start; }
+  .patient-stage-copy h2 { font-size: 3.2rem; }
+  .patient-stage-visual { min-height: 120px; position: absolute; right: -23px; bottom: 28px; opacity: .82; }
+  .patient-stage-ring { width: 135px; height: 135px; box-shadow: 0 0 0 20px rgb(255 255 255 / 18%),0 0 0 40px rgb(255 255 255 / 10%); }
+  .patient-stage-metric { right: auto; left: 22px; bottom: 20px; max-width: 62%; }
+  .patient-home-side, .patient-pregnancy-grid { grid-template-columns: 1fr; }
+  .patient-privacy-strip { grid-column: auto; }
+  .patient-mood-row { grid-template-columns: repeat(2,1fr); }
+  .patient-calendar { padding: 20px 15px; }
+  .patient-days, .patient-weekdays { gap: 3px; }
+  .patient-pregnancy-hero { padding: 26px 22px; grid-template-columns: 1fr; }
+  .patient-pregnancy-ring { width: 135px; height: 135px; justify-self: center; }
+  .patient-milestones { grid-template-columns: repeat(4,1fr); }
+  .patient-danger-card { align-items: stretch; flex-direction: column; }
+  .patient-danger-card > button { width: 100%; justify-content: center; }
+  .patient-sheet > div { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .patient-enter, .patient-stage-ring, .patient-stage-visual > i, .patient-bars span, .patient-pregnancy-ring, .patient-progress-track span { animation: none; }
+}

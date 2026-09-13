@@ -34,8 +34,9 @@ describe("interaction contract", () => {
   });
 
   it("wires every native pressable to an action", () => {
-    const file = resolve(process.cwd(), "../mobile/app/index.tsx");
-    expect(findElementsMissingHandler(file, "Pressable", "onPress")).toEqual([]);
+    for (const path of ["../mobile/app/index.tsx", "../mobile/components/PatientTracker.tsx"]) {
+      expect(findElementsMissingHandler(resolve(process.cwd(), path), "Pressable", "onPress")).toEqual([]);
+    }
   });
   it("keeps production screens free of review and fixture imports", () => {
     for (const path of ["app/page.tsx", "components/LivePortal.tsx", "../mobile/app/index.tsx"]) {
