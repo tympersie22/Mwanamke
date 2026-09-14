@@ -1,15 +1,17 @@
 import * as Crypto from "expo-crypto";
 import * as LocalAuthentication from "expo-local-authentication";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { apiUrl, clearSession, restoreSession, signIn, type Session } from "@/lib/auth";
+import { PatientPortalPreview, type PatientPortalPreviewView } from "@/components/PatientPortalPreview";
 import { PatientTracker, type PatientTrackerView } from "@/components/PatientTracker";
 
 type Row = { id: string; displayName?: string; titleEn?: string; titleSw?: string; languages?: string[]; status?: string; startsAt?: string; mode?: string; amountTzs?: number; currency?: string; nameEn?: string; nameSw?: string; priceTzs?: number; holdExpiresAt?: string; kind?: "export"|"deletion"; createdAt?: string; facility?: { nameEn: string; nameSw: string; locality: string; accessibilityEn: string; accessibilitySw: string } };
 type Actor = { id: string; role: string };
 export default function MobileApp() {
+  const scrollRef = useRef<ScrollView>(null);
   const [language, setLanguage] = useState<"sw"|"en">("sw");
   const [step,setStep] = useState<"language"|"privacy"|"care">("language");
   const [session,setSession] = useState<Session|null>(null);
@@ -27,7 +29,11 @@ export default function MobileApp() {
   const [locked,setLocked] = useState(false);
   const [patientPreview,setPatientPreview] = useState(false);
   const isPatientTracker = actor?.role === "patient" && ["personal","cycle","pregnancy","reminders"].includes(path);
+  const isPatientPreviewFeature = patientPreview && actor?.role === "patient" && ["providers","appointments","privacy/requests"].includes(path);
   const t = (sw:string,en:string) => language === "sw" ? sw : en;
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [path, step]);
   const roleExperience = actor?.role === "provider"
     ? { label:t("Mtoa huduma","Care professional"), title:t("Ratiba yako ya huduma","Your care schedule") }
     : actor?.role === "navigator"
@@ -78,6 +84,7 @@ export default function MobileApp() {
   };
   const load = async (endpoint:string,current = session,more?:string) => {
     if(["personal","cycle","pregnancy","reminders"].includes(endpoint)) {setPath(endpoint);setRows([]);setCursor(null);setError("");setNotice("");setBusy(false);return;}
+    if(patientPreview && !current && ["providers","appointments","privacy/requests"].includes(endpoint)) {setPath(endpoint);setRows([]);setCursor(null);setError("");setNotice("");setBusy(false);return;}
     if(patientPreview && !current) {setNotice(t("Ingia ili kufungua huduma hii salama.","Sign in to open this secure service."));setError("");return;}
     if(!current) return;
     setBusy(true);setError("");
@@ -117,14 +124,14 @@ export default function MobileApp() {
   const chooseLanguage = async (value:"sw"|"en") => {setError("");setLanguage(value);try{await AsyncStorage.setItem("mwanamke.language",value);}catch{setError(value === "sw" ? "Lugha haijahifadhiwa." : "Language preference could not be saved.");}};
   const button = (label:string, action:()=>void, primary=false) => <Pressable accessibilityRole="button" disabled={busy} accessibilityState={{disabled:busy}} onPress={action} style={[styles.button,primary && styles.primary]}><Text style={[styles.buttonText,primary && styles.primaryText]}>{label}</Text></Pressable>;
   if(obscured || locked) return <SafeAreaView style={styles.safe}><Text style={styles.brand}>MWANAMKE</Text>{locked && <Text style={styles.body}>{t("Thibitisha utambulisho wako ili kuendelea.", "Authenticate to continue.")}</Text>}</SafeAreaView>;
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Text style={styles.brand}>MWANAMKE</Text>
+  return <SafeAreaView style={styles.safe}><ScrollView ref={scrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"><Text style={styles.brand}>MWANAMKE</Text>
     {notice ? <Text accessibilityLiveRegion="polite" style={styles.body}>{notice}</Text> : null}
     {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
     {busy && <ActivityIndicator accessibilityLabel={t("Inapakia","Loading")} size="large" color="#17665c"/>}
     {step === "language" ? <><Text accessibilityRole="header" style={styles.title}>{t("Karibu. Chagua lugha yako.","Welcome. Choose your language.")}</Text><Text style={styles.body}>{t("Huduma, kwa hatua yako.","Care, at your pace.")}</Text>{button("Kiswahili",()=>void chooseLanguage("sw"),language === "sw")}{button("English",()=>void chooseLanguage("en"),language === "en")}{button(t("Endelea","Continue"),()=>{setError("");setStep("privacy");},true)}</> : step === "privacy" ? <><Text accessibilityRole="header" style={styles.title}>{t("Nafasi yako ya faragha","Your private care space")}</Text><View style={styles.card}><Text style={styles.body}>{t("Huduma hii si ya dharura. Usitumie kwa usaidizi wa haraka. Taarifa za akaunti na miadi zinahifadhiwa na huduma. Hakuna taarifa za afya zinazohitajika ili kuingia.","This service is not for emergencies. Do not rely on it for urgent help. Account and appointment information is stored by the service. No health details are needed to sign in.")}</Text></View><Text style={styles.body}>{t("Watoa huduma na wafanyakazi hutumia akaunti zilizoalikwa na kuthibitishwa.","Care professionals and staff use invited and verified accounts.")}</Text>{Platform.OS === "web" ? button(t("Endelea kwenye tovuti salama","Continue in secure web portal"),()=>void continueInWebPortal(),true) : button(t("Ingia au jisajili","Sign in or register"),()=>void login(),true)}{__DEV__ && Platform.OS !== "web" ? button(t("Fungua onyesho la nafasi ya mgonjwa","Open patient space preview"),openPatientPreview) : null}{button(t("Badili lugha","Change language"),()=>{setError("");setStep("language");})}</> : <>
-      {!isPatientTracker ? <><Text style={styles.verified}>{roleExperience.label}</Text><Text accessibilityRole="header" style={styles.title}>{roleExperience.title}</Text></> : null}
+      {!isPatientTracker && !isPatientPreviewFeature ? <><Text style={styles.verified}>{roleExperience.label}</Text><Text accessibilityRole="header" style={styles.title}>{roleExperience.title}</Text></> : null}
       {actor && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.nav,actor.role === "patient" && styles.patientNav]}>{(actor.role === "patient" ? [["personal",t("Leo","Today")],["reminders",t("Dawa","Medicines")],["cycle",t("Mzunguko","Cycle")],["pregnancy",t("Ujauzito","Pregnancy")],["providers",t("Huduma","Care")],["appointments",t("Miadi","Appointments")]] : actor.role === "provider" ? [["appointments",t("Ratiba","Schedule")],["providers",t("Huduma","Directory")]] : actor.role === "navigator" ? [["navigator/assignments",t("Kazi","Assignments")],["providers",t("Huduma","Directory")]] : [["admin/aggregate",t("Muhtasari","Overview")]]).concat([["privacy/requests",t("Akaunti","Account")]]).map(([endpoint,label])=><View key={endpoint} style={styles.navItem}>{button(label!,()=>{setProvider(null);setService(null);setNotice("");void load(endpoint!);},path===endpoint)}</View>)}</ScrollView>}
-      {isPatientTracker ? <><PatientTracker language={language} view={path as PatientTrackerView} onNavigate={(next)=>void load(next)} onOpenAppointments={()=>void load("appointments")} onBrowseCare={()=>void load("providers")} storageScope={patientPreview ? "patient-preview" : actor!.id} preview={patientPreview} />{patientPreview ? button(t("Funga onyesho","Close preview"),()=>void logout()) : null}</> : <>
+      {isPatientTracker ? <><PatientTracker language={language} view={path as PatientTrackerView} onNavigate={(next)=>void load(next)} onOpenAppointments={()=>void load("appointments")} onBrowseCare={()=>void load("providers")} storageScope={patientPreview ? "patient-preview" : actor!.id} preview={patientPreview} />{patientPreview ? button(t("Funga onyesho","Close preview"),()=>void logout()) : null}</> : isPatientPreviewFeature ? <PatientPortalPreview language={language} view={path as PatientPortalPreviewView} onNavigate={(next)=>void load(next)} onLanguageChange={(next)=>void chooseLanguage(next)} onSignOut={()=>void logout()} /> : <>
       {path==="privacy/requests" && <View style={styles.card}><Text accessibilityRole="header" style={styles.subtitle}>{t("Lugha na taarifa zako","Your language and information")}</Text>{button(t("Hifadhi lugha hii kwenye akaunti","Save this language to account"),()=>void mutate("profile",{preferredLanguage:language},"PATCH"))}<Text style={styles.body}>{t("Unaweza kuomba nakala ya taarifa au kufutwa kwa akaunti. Ombi halifuti wala kutuma taarifa papo hapo.","You can request a data copy or account deletion. A request does not immediately delete or send data.")}</Text>{button(t("Omba nakala ya taarifa","Request data export"),()=>void mutate("privacy/requests",{kind:"export",idempotencyKey:Crypto.randomUUID()}))}{button(t("Omba kufutwa kwa akaunti","Request account deletion"),()=>void mutate("privacy/requests",{kind:"deletion",idempotencyKey:Crypto.randomUUID()}))}</View>}
       {path.includes("/availability") && <Text style={styles.body}>{t("Chagua nafasi ya huduma yako.","Choose a slot for your service.")}</Text>}
       {!busy && !error && rows.length===0 && path!=="admin/aggregate" && <View style={styles.card}><Text accessibilityRole="header" style={styles.subtitle}>{t("Hakuna taarifa bado","Nothing here yet")}</Text><Text style={styles.body}>{t("Taarifa zitapatikana hapa huduma inapopatikana kwa akaunti yako.","Records will appear here when they are available for your account.")}</Text></View>}
