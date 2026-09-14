@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-export type PatientTrackerView = "personal" | "cycle" | "pregnancy";
+import { MedicationRemindersScreen, MedicationSummaryCard, useMedicineReminders } from "@/components/MedicationReminders";
+
+export type PatientTrackerView = "personal" | "cycle" | "pregnancy" | "reminders";
 type Language = "sw" | "en";
 type LifeStage = "cycle" | "pregnancy" | "postpartum" | "perimenopause";
 
@@ -20,13 +22,17 @@ export function PatientTracker({
   view,
   onNavigate,
   onOpenAppointments,
-  onBrowseCare
+  onBrowseCare,
+  storageScope,
+  preview
 }: {
   language: Language;
   view: PatientTrackerView;
   onNavigate: (view: PatientTrackerView) => void;
   onOpenAppointments: () => void;
   onBrowseCare: () => void;
+  storageScope: string;
+  preview: boolean;
 }) {
   const t = (sw: string, en: string) => language === "sw" ? sw : en;
   const entrance = useRef(new Animated.Value(0)).current;
@@ -37,6 +43,7 @@ export function PatientTracker({
   const [saved, setSaved] = useState(false);
   const [urgentOpen, setUrgentOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(14);
+  const medicineReminders = useMedicineReminders({ language, storageScope, preview });
 
   useEffect(() => {
     entrance.setValue(0);
@@ -82,6 +89,10 @@ export function PatientTracker({
     <View style={styles.privateNote}><Text style={styles.privateNoteIcon}>◇</Text><Text style={styles.privateNoteText}>{t("Onyesho hili halishiriki kumbukumbu na mhudumu.", "This preview does not share entries with care professionals.")}</Text></View>
   </View>;
 
+  if (view === "reminders") return <Animated.View style={[styles.screen, enterStyle]}>
+    <MedicationRemindersScreen language={language} controller={medicineReminders} onBack={() => onNavigate("personal")} />
+  </Animated.View>;
+
   if (view === "cycle") return <Animated.View style={[styles.screen, enterStyle]}>
     <View style={styles.pageHead}><Text style={styles.eyebrow}>{t("MZUNGUKO WANGU", "MY CYCLE")}</Text><Text accessibilityRole="header" style={styles.pageTitle}>{t("Kalenda na mienendo", "Calendar & patterns")}</Text><Text style={styles.lead}>{t("Kumbukumbu, makadirio na mabadiliko yako kwa mtazamo mmoja.", "Your entries, estimates, and changes at a glance.")}</Text></View>
     <View style={[styles.card, styles.cycleHero]}><View style={styles.cycleRing}><Text style={styles.cycleNumber}>13</Text><Text style={styles.cycleUnit}>{t("SIKU", "DAY")}</Text></View><View style={styles.flex}><Text style={styles.eyebrow}>{t("LEO", "TODAY")}</Text><Text style={styles.cardTitle}>{t("Awamu ya ukuaji", "Follicular phase")}</Text><Text style={styles.bodySmall}>{t("Nguvu inaweza kuongezeka katika siku zinazofuata.", "Energy may rise over the next few days.")}</Text></View></View>
@@ -95,6 +106,7 @@ export function PatientTracker({
   if (view === "pregnancy") return <Animated.View style={[styles.screen, enterStyle]}>
     <View style={styles.pageHead}><Text style={styles.eyebrow}>{t("UJAUZITO WANGU", "MY PREGNANCY")}</Text><Text accessibilityRole="header" style={styles.pageTitle}>{t("Wiki 24, kwa utulivu", "Week 24, at a glance")}</Text><Text style={styles.lead}>{t("Hatua, ziara na vitu muhimu vya leo.", "Your stage, visits, and today’s essentials.")}</Text></View>
     <View style={styles.pregnancyHero}><View style={styles.pregnancyTop}><Glyph tone="green">♡</Glyph><View style={styles.percentPill}><Text style={styles.percentText}>61%</Text></View></View><Text style={styles.pregnancyLabel}>{t("MUHULA WA PILI", "SECOND TRIMESTER")}</Text><Text style={styles.pregnancyTitle}>{t("Wiki 24 + siku 3", "24 weeks + 3 days")}</Text><Text style={styles.pregnancyDate}>{t("Tarehe inayokadiriwa: 29 Desemba 2026", "Estimated due date: 29 December 2026")}</Text><View style={styles.progress}><View style={styles.progressFill} /></View><Text style={styles.pregnancyNote}>{t("Makadirio yanaweza kubadilika. Mhudumu wako atathibitisha tarehe za huduma.", "Estimates can change. Your care professional will confirm clinical dates.")}</Text></View>
+    <MedicationSummaryCard language={language} controller={medicineReminders} onOpen={() => onNavigate("reminders")} />
     <Pressable accessibilityRole="button" onPress={onOpenAppointments} style={({ pressed }) => [styles.card, styles.appointmentCard, pressed && styles.pressed]}><Glyph tone="green">＋</Glyph><View style={styles.flex}><Text style={styles.eyebrow}>{t("HUDUMA IJAYO · SIKU 2", "NEXT CARE · 2 DAYS")}</Text><Text style={styles.cardTitle}>{t("Ziara ya kliniki ya wajawazito", "Antenatal visit")}</Text><Text style={styles.bodySmall}>{t("Jumatano · 3:30 asubuhi · Mkunazini", "Wednesday · 9:30 AM · Mkunazini")}</Text></View><Text style={styles.chevron}>›</Text></Pressable>
     <View style={styles.card}><View style={styles.sectionHead}><View><Text style={styles.eyebrow}>{t("MPANGO WA HUDUMA", "CARE PLAN")}</Text><Text style={styles.cardTitle}>{t("Ziara 8 za kliniki", "8 antenatal contacts")}</Text></View><Text style={styles.planCount}>3/8</Text></View><View style={styles.contactRow}>{[1,2,3,4,5,6,7,8].map(item => <View key={item} style={[styles.contact, item <= 3 && styles.contactDone]}><Text style={[styles.contactText, item <= 3 && styles.contactTextDone]}>{item <= 3 ? "✓" : item}</Text></View>)}</View><Text style={styles.bodySmall}>{t("Ratiba hii inafuata mfano wa WHO. Mhudumu wako anaweza kuibadilisha kulingana na mahitaji yako.", "This follows the WHO model. Your care professional may adjust it for your needs.")}</Text></View>
     <View style={styles.card}><Text style={styles.eyebrow}>{t("LEO", "TODAY")}</Text><Text style={styles.cardTitle}>{t("Vitu vitatu vya kuzingatia", "Three gentle priorities")}</Text>{[["✓", t("Dawa na virutubisho", "Medicine & supplements")], ["◡", t("Usingizi na nguvu", "Sleep & energy")], ["♡", t("Harakati za mtoto", "Baby movement")]].map(([glyph, label]) => <View key={label} style={styles.priority}><Glyph tone="green">{glyph!}</Glyph><Text style={styles.priorityText}>{label}</Text></View>)}</View>
@@ -107,6 +119,7 @@ export function PatientTracker({
     <View style={styles.homeHead}><View><Text style={styles.date}>{t("JUMATATU, 14 SEPTEMBA", "MONDAY, 14 SEPTEMBER")}</Text><Text accessibilityRole="header" style={styles.pageTitle}>{t("Habari, Amina", "Hello, Amina")}</Text><Text style={styles.lead}>{t("Haya ndiyo muhimu kwako leo.", "Here’s what matters for you today.")}</Text></View><View style={styles.avatar}><Text style={styles.avatarText}>AM</Text></View></View>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.stageTabs}>{stageLabels.map(([value, label]) => <Pressable accessibilityRole="tab" accessibilityState={{ selected: stage === value }} key={value} onPress={() => setStage(value)} style={[styles.stageTab, stage === value && styles.stageTabActive]}><Text style={[styles.stageTabText, stage === value && styles.stageTabTextActive]}>{label}</Text></Pressable>)}</ScrollView>
     <View style={[styles.stageHero, stage === "pregnancy" && styles.stageHeroGreen, stage === "postpartum" && styles.stageHeroSand, stage === "perimenopause" && styles.stageHeroLilac]}><View style={styles.stageHeroTop}><Text style={styles.stageEyebrow}>{active.eyebrow}</Text><Glyph tone={stage === "pregnancy" ? "green" : "plum"}>{active.glyph}</Glyph></View><Text style={styles.stageTitle}>{active.title}</Text><Text style={styles.stageDetail}>{active.detail}</Text>{stage === "cycle" || stage === "pregnancy" ? <Pressable accessibilityRole="button" onPress={() => onNavigate(stage === "pregnancy" ? "pregnancy" : "cycle")} style={styles.heroButton}><Text style={styles.heroButtonText}>{stage === "pregnancy" ? t("Fungua ratiba ya ujauzito", "Open pregnancy timeline") : t("Fungua kalenda", "Open calendar")}  →</Text></Pressable> : null}<View style={styles.heroOrbOne} /><View style={styles.heroOrbTwo} /></View>
+    <MedicationSummaryCard language={language} controller={medicineReminders} onOpen={() => onNavigate("reminders")} />
     {quickLog}
     <Pressable accessibilityRole="button" onPress={() => onNavigate("cycle")} style={({ pressed }) => [styles.insightCard, pressed && styles.pressed]}><Glyph>≈</Glyph><View style={styles.flex}><Text style={styles.eyebrow}>{t("MWENENDO WAKO", "YOUR PATTERN")}</Text><Text style={styles.insightTitle}>{t("Nguvu huwa juu baada ya hedhi", "Energy tends to rise after your period")}</Text><Text style={styles.bodySmall}>{t("Imeonekana katika mizunguko 3 iliyopita.", "Seen across your last 3 cycles.")}</Text></View><Text style={styles.chevron}>›</Text></Pressable>
     <Pressable accessibilityRole="button" onPress={onOpenAppointments} style={({ pressed }) => [styles.card, styles.appointmentCard, pressed && styles.pressed]}><Glyph tone="green">＋</Glyph><View style={styles.flex}><Text style={styles.eyebrow}>{t("MIADI IJAYO", "NEXT APPOINTMENT")}</Text><Text style={styles.appointmentTitle}>{t("Jumatano · 3:30 asubuhi", "Wednesday · 9:30 AM")}</Text><Text style={styles.bodySmall}>{t("Kliniki ya Wanawake Bahari", "Bahari Women’s Clinic")}</Text></View><Text style={styles.chevron}>›</Text></Pressable>

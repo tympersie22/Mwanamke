@@ -1,7 +1,17 @@
 import { Stack } from "expo-router";
+import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { allowScreenCaptureAsync, preventScreenCaptureAsync } from "expo-screen-capture";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false
+  })
+});
 
 export default function RootLayout() {
   useEffect(() => {

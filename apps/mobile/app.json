@@ -33,6 +33,7 @@
           "imageWidth": 120
         }
       ],
+      "expo-notifications",
       "expo-web-browser"
     ],
     "ios": {
