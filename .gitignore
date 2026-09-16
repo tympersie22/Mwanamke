@@ -27,3 +27,16 @@ service-account*.json
 *.backup
 # Release binaries, scan reports and signing material are never source files.
 artifacts/
+
+# Terraform working data and local inputs. Infrastructure source files remain tracked.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
