@@ -23,7 +23,7 @@
     "react-dom": "19.2.3",
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "4.26.2",
-    "expo": "57.0.22",
+    "expo": "57.0.23",
     "expo-router": "57.0.21",
     "react-native-reanimated": "4.5.1",
     "react-native-worklets": "0.10.1"
