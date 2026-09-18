@@ -126,7 +126,7 @@ export function PatientSpace({
           <p className="patient-eyebrow"><Sparkles aria-hidden="true" />{t("Dakika moja", "One minute")}</p>
           <h3 id="daily-checkin-title">{t("Ukoje leo?", "How are you today?")}</h3>
         </div>
-        <span>{t("14 Sep", "14 Sep")}</span>
+        <span>{t("14 Septemba", "14 Sep")}</span>
       </div>
       <div className="patient-log-section">
         <span className="patient-log-label"><Droplets aria-hidden="true" />{t("Mtiririko", "Flow")}</span>

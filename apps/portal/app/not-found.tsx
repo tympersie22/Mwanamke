@@ -7,7 +7,7 @@ export default async function NotFound() {
     ? { title: "Ukurasa haujapatikana", body: "Ukurasa huu haupo au kiungo kimebadilika.", action: "Rudi mwanzo" }
     : { title: "Page not found", body: "This page does not exist or the link has changed.", action: "Go home" };
   return (
-    <main className="fatal-error">
+    <main className="fatal-error" lang={language}>
       <section className="fatal-error-card">
         <Link href="/" className="live-brand" aria-label="MWANAMKE"><span aria-hidden="true">M</span><strong>MWANAMKE</strong></Link>
         <p className="live-overline">404</p>
