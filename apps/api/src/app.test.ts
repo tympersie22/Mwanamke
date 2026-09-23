@@ -81,6 +81,8 @@ describe("Authorized list DTOs", () => {
       const headers = { authorization: "Bearer dev:patient:list-owner" };
       expect((await app.inject({ url: "/v1/providers?limit=101", headers })).statusCode).toBe(422);
       expect((await app.inject({ url: "/v1/providers", headers })).json()).toEqual({ data: [], nextCursor: null });
+      expect((await app.inject({ url: "/v1/providers", headers: { authorization: "Bearer dev:provider:staff" } })).statusCode).toBe(403);
+      expect((await app.inject({ url: "/v1/providers", headers: { authorization: "Bearer dev:platform-admin:admin" } })).statusCode).toBe(403);
       expect((await app.inject({ url: "/v1/navigator/assignments", headers })).statusCode).toBe(403);
       expect((await app.inject({ method: "POST", url: "/v1/notifications/anything", headers: { authorization: "Bearer dev:provider:staff" } })).statusCode).toBe(403);
       expect((await app.inject({ method: "GET", url: "/v1/encrypted-records/not-a-uuid", headers })).statusCode).toBe(422);
@@ -97,6 +99,15 @@ describe("Authorized list DTOs", () => {
       expect((await app.inject({ url: "/v1/appointments", headers })).json().data).toHaveLength(1);
       expect((await app.inject({ url: "/v1/appointments", headers: { authorization: "Bearer dev:patient:stranger" } })).json().data).toEqual([]);
       expect((await app.inject({ url: "/v1/appointments", headers: { authorization: "Bearer dev:platform-admin:admin" } })).statusCode).toBe(403);
+    } finally { await app.close(); }
+  });
+
+  it("keeps workforce account deletion under managed identity controls", async () => {
+    const app = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true" }) });
+    try {
+      const response = await app.inject({ method: "POST", url: "/v1/privacy/requests", headers: { authorization: "Bearer dev:provider:staff" }, payload: { kind: "deletion", idempotencyKey: "managed-workforce-account" } });
+      expect(response.statusCode).toBe(403);
+      expect(response.json()).toEqual({ error: "WORKFORCE_ACCOUNT_MANAGED" });
     } finally { await app.close(); }
   });
 

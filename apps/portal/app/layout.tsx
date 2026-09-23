@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const language = (await cookies()).get("mwanamke-language")?.value === "en" ? "en" : "sw";
   return (
-    <html lang={language} className={`${uiFont.variable} ${displayFont.variable}`}>
+    <html lang={language} className={`${uiFont.variable} ${displayFont.variable}`} data-scroll-behavior="smooth">
       {/* Browser writing assistants may add data-* attributes before React hydrates. */}
       <body suppressHydrationWarning>{children}</body>
     </html>

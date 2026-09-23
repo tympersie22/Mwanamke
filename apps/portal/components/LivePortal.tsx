@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PatientSpace, type PatientView } from "./PatientSpace";
+import { portalPathAllowed, portalSections, type PortalSection } from "./portal-sections";
 import {
   Baby,
   ArrowRight,
@@ -21,7 +22,6 @@ import {
   ShieldCheck,
   Stethoscope,
   UserRound,
-  WalletCards,
   X
 } from "lucide-react";
 
@@ -294,6 +294,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
   }, [confirmation]);
 
   const navigate = (endpoint: string, nextProvider: RecordDto | null = null, nextService: RecordDto | null = null) => {
+    if (actor && !portalPathAllowed(actor.role, endpoint)) return;
     setProvider(nextProvider);
     setService(nextService);
     setNotice("");
@@ -316,9 +317,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     ? t("Akaunti na faragha", "Account and privacy")
     : path === "appointments"
       ? actor?.role === "provider" ? t("Ratiba ya miadi", "Appointment schedule") : t("Miadi yako", "Your appointments")
-      : path === "payments"
-        ? t("Malipo yako", "Your payments")
-        : path === "navigator/assignments"
+      : path === "navigator/assignments"
           ? t("Kazi ulizopangiwa", "Assigned work")
           : path === "admin/aggregate"
             ? t("Muhtasari wa huduma", "Service overview")
@@ -338,8 +337,6 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
           ? actor?.role === "provider"
             ? t("Ratiba hii inaonyesha muda, aina na hali ya miadi uliyoidhinishwa kuona.", "This schedule shows the time, format, and status of appointments you are authorized to view.")
             : t("Angalia hali ya miadi na ukamilishe hatua zinazohitajika.", "Review appointment status and complete any required next step.")
-          : path === "payments"
-            ? t("Historia ya malipo inayohusiana na akaunti yako.", "Payment history associated with your account.")
           : path === "privacy/requests"
               ? t("Dhibiti lugha na maombi yanayohusu taarifa zako.", "Manage language and requests concerning your information.")
               : path === "navigator/assignments"
@@ -348,7 +345,9 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
                   ? t("Vipimo vya jumla vya huduma; hakuna rekodi binafsi zinazopatikana hapa.", "Aggregate service measures; no individual records are available here.")
                   : t("Taarifa ulizoidhinishwa kuona.", "Information your account is authorized to view.");
 
-  const roleExperience = actor?.role === "provider"
+  const roleExperience = !actor
+    ? { label: t("Inapakia", "Loading"), title: t("Tunaandaa sehemu yako", "Preparing your portal"), description: t("Tunathibitisha ruhusa za akaunti yako.", "We are verifying your account permissions.") }
+    : actor.role === "provider"
     ? { label: t("Mtoa huduma", "Care professional"), title: t("Ratiba yako ya huduma", "Your care schedule"), description: t("Angalia miadi inayohusiana na wasifu wako wa huduma.", "Review appointments connected to your professional profile.") }
     : actor?.role === "navigator"
       ? { label: t("Mratibu wa huduma", "Care navigator"), title: t("Kazi za uratibu", "Care coordination"), description: t("Angalia kazi ulizopangiwa na orodha ya huduma iliyoidhinishwa.", "Review your assigned work and the verified care directory.") }
@@ -385,12 +384,15 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     facilities: t("Vituo vilivyothibitishwa", "Verified facilities")
   }[name] ?? t("Kipimo cha mfumo", "System metric"));
 
-  let navItems: Array<[string, string]> = [];
-  if (actor?.role === "patient") navItems = [["personal", t("Leo", "Today")], ["cycle", t("Mzunguko", "Cycle")], ["pregnancy", t("Ujauzito", "Pregnancy")], ["providers", t("Huduma", "Care")], ["appointments", t("Miadi", "Appointments")], ["payments", t("Malipo", "Payments")]];
-  else if (actor?.role === "provider") navItems = [["appointments", t("Ratiba", "Schedule")], ["providers", t("Orodha ya huduma", "Care directory")]];
-  else if (actor?.role === "navigator") navItems = [["navigator/assignments", t("Kazi", "Assignments")], ["providers", t("Orodha ya huduma", "Care directory")]];
-  else if (actor) navItems = [["admin/aggregate", t("Muhtasari", "Overview")]];
-  if (actor) navItems.push(["privacy/requests", t("Akaunti", "Account")]);
+  const sectionLabel = (section: PortalSection) => ({
+    personal: t("Nafasi yangu", "My space"),
+    providers: actor?.role === "navigator" ? t("Orodha ya huduma", "Care directory") : t("Huduma", "Care"),
+    appointments: actor?.role === "provider" ? t("Ratiba", "Schedule") : t("Miadi", "Appointments"),
+    "navigator/assignments": t("Kazi", "Assignments"),
+    "admin/aggregate": t("Muhtasari", "Overview"),
+    "privacy/requests": t("Akaunti", "Account")
+  })[section];
+  const navItems = portalSections(actor?.role).map((section) => [section, sectionLabel(section)] as const);
 
   const confirmAction = async () => {
     const action = confirmation?.action;
@@ -405,7 +407,6 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     if (path === "appointments") return actor?.role === "provider"
       ? { title: t("Hakuna miadi kwenye ratiba", "No appointments on your schedule"), body: t("Miadi inayohusishwa na wasifu wako itaonekana hapa.", "Appointments connected to your professional profile will appear here.") }
       : { title: t("Bado huna miadi", "You have no appointments yet"), body: t("Anza kwa kuchagua mtoa huduma aliyethibitishwa.", "Start by choosing a verified care professional."), action: actor?.role === "patient" ? { label: t("Tafuta huduma", "Find care"), endpoint: "providers" } : undefined };
-    if (path === "payments") return { title: t("Bado hakuna malipo", "No payments yet"), body: t("Malipo yataonekana hapa baada ya kuanzishwa kwa miadi.", "Payments will appear here after they are started for an appointment."), action: { label: t("Angalia miadi", "View appointments"), endpoint: "appointments" } };
     if (path === "navigator/assignments") return { title: t("Hakuna kazi hai", "No active assignments"), body: t("Kazi mpya iliyoidhinishwa itaonekana hapa inapopangwa kwako.", "New authorized work will appear here when it is assigned to you.") };
     return { title: path === "providers" ? t("Hakuna huduma inayopatikana", "No care is available") : t("Hakuna taarifa bado", "Nothing here yet"), body: path === "providers" ? t("Hakuna mtoa huduma aliyethibitishwa anayepatikana kwa sasa.", "No verified care professional is available right now.") : t("Taarifa zitaonekana hapa zikiongezwa kwenye akaunti yako.", "Records will appear here when they are added to your account.") };
   };
@@ -423,9 +424,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
         ? t("Foleni ya uratibu", "Coordination queue")
         : path === "appointments" && actor?.role === "provider"
           ? t("Ratiba ya mtoa huduma", "Professional schedule")
-          : path === "payments"
-            ? t("Rekodi za kifedha", "Financial records")
-            : isServices && actor?.role !== "patient"
+          : isServices && actor?.role !== "patient"
               ? t("Orodha ya huduma", "Care directory")
               : isAvailability || isServices
               ? t("Hatua za kuhifadhi", "Booking flow")
@@ -447,9 +446,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
     ? <Stethoscope aria-hidden="true" />
     : endpoint === "appointments"
       ? <CalendarDays aria-hidden="true" />
-      : endpoint === "payments"
-        ? <WalletCards aria-hidden="true" />
-        : endpoint === "navigator/assignments"
+      : endpoint === "navigator/assignments"
           ? <ClipboardList aria-hidden="true" />
           : endpoint === "admin/aggregate"
             ? <BarChart3 aria-hidden="true" />
@@ -496,7 +493,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
               <div className="live-section-intro"><p className="live-overline">{t("Hatua kwa hatua", "Step by step")}</p><h2 id="how-title">{t("Kutoka kutafuta hadi miadi", "From search to appointment")}</h2><p>{t("Kila hatua inaonyesha chaguo muhimu kabla ya kuendelea.", "Each step shows the information you need before moving forward.")}</p></div>
               <ol className="live-step-grid"><li><span>01</span><Stethoscope aria-hidden="true" /><h3>{t("Chagua mtoa huduma", "Choose care")}</h3><p>{t("Angalia jina, utaalamu na lugha.", "Review the professional, specialty, and languages.")}</p></li><li><span>02</span><CalendarDays aria-hidden="true" /><h3>{t("Chagua huduma na muda", "Choose service and time")}</h3><p>{t("Linganisha aina ya huduma, eneo na bei.", "Compare the care format, location, and price.")}</p></li><li><span>03</span><Check aria-hidden="true" /><h3>{t("Kagua na uthibitishe", "Review and confirm")}</h3><p>{t("Fuata hali ya miadi kwenye akaunti yako.", "Track the appointment status in your account.")}</p></li></ol>
             </section>
-            <section className="live-privacy-section" id="privacy" aria-labelledby="privacy-title"><div><p className="live-overline">{t("Faragha kwa vitendo", "Privacy in practice")}</p><h2 id="privacy-title">{t("Akaunti yako, maombi yako.", "Your account, your requests.")}</h2></div><div><p>{t("Unaweza kuona miadi na malipo yaliyoidhinishwa kwa akaunti yako, kuhifadhi lugha unayopendelea, na kuomba nakala au kufutwa kwa taarifa.", "You can view appointments and payments authorized for your account, save your preferred language, and request a data copy or deletion.")}</p><p className="live-emergency"><CircleAlert aria-hidden="true" /> {t("MWANAMKE si huduma ya dharura. Tafuta huduma za dharura za eneo lako unapohitaji msaada wa haraka.", "MWANAMKE is not an emergency service. Use local emergency services when you need urgent help.")}</p></div></section>
+            <section className="live-privacy-section" id="privacy" aria-labelledby="privacy-title"><div><p className="live-overline">{t("Faragha kwa vitendo", "Privacy in practice")}</p><h2 id="privacy-title">{t("Akaunti yako, maombi yako.", "Your account, your requests.")}</h2></div><div><p>{t("Unaweza kuona miadi iliyoidhinishwa kwa akaunti yako, kuhifadhi lugha unayopendelea, na kuomba nakala au kufutwa kwa taarifa.", "You can view appointments authorized for your account, save your preferred language, and request a data copy or deletion.")}</p><p className="live-emergency"><CircleAlert aria-hidden="true" /> {t("MWANAMKE si huduma ya dharura. Tafuta huduma za dharura za eneo lako unapohitaji msaada wa haraka.", "MWANAMKE is not an emergency service. Use local emergency services when you need urgent help.")}</p></div></section>
           </>
         ) : (
           <div className={`live-app-layout live-role-${roleClass}`}>
@@ -518,7 +515,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
 
                 {path === "privacy/requests" ? <div className="live-account-grid">
                   <section className="live-card"><p className="live-card-eyebrow">{t("Mapendeleo", "Preference")}</p><h3>{t("Lugha ya akaunti", "Account language")}</h3><dl className="live-definition"><div><dt>{t("Iliyohifadhiwa", "Saved")}</dt><dd>{savedLanguage ? languageName(savedLanguage) : "—"}</dd></div><div><dt>{t("Iliyochaguliwa", "Selected")}</dt><dd>{languageName(language)}</dd></div></dl><Button variant="primary" disabled={busy || savedLanguage === language} onClick={() => void mutate("profile", { preferredLanguage: language }, "PATCH")}>{savedLanguage === language ? t("Lugha imehifadhiwa", "Language is saved") : t("Hifadhi lugha hii", "Save this language")}</Button></section>
-                  <section className="live-card"><p className="live-card-eyebrow">{t("Haki za taarifa", "Data rights")}</p><h3>{t("Omba nakala au kufutwa", "Request a copy or deletion")}</h3><p>{t("Timu ya faragha itathibitisha na kushughulikia ombi. Kutuma ombi hakufuti wala kutuma taarifa papo hapo.", "The privacy team will verify and process the request. Submission does not immediately delete or send information.")}</p><div className="live-action-row"><Button disabled={busy} onClick={() => void mutate("privacy/requests", { kind: "export", idempotencyKey: crypto.randomUUID() })}>{t("Omba nakala", "Request a copy")}</Button><Button variant="danger" disabled={busy} onClick={() => setConfirmation({ title: t("Omba kufutwa kwa akaunti?", "Request account deletion?"), body: t("Hili litatuma ombi kwa timu ya faragha. Akaunti yako haitafutwa papo hapo.", "This sends a request to the privacy team. Your account will not be deleted immediately."), confirmLabel: t("Tuma ombi", "Send request"), tone: "danger", action: () => mutate("privacy/requests", { kind: "deletion", idempotencyKey: crypto.randomUUID() }) })}>{t("Omba kufutwa", "Request deletion")}</Button></div></section>
+                  <section className="live-card"><p className="live-card-eyebrow">{t("Haki za taarifa", "Data rights")}</p><h3>{actor?.role === "patient" ? t("Omba nakala au kufutwa", "Request a copy or deletion") : t("Omba nakala ya taarifa", "Request a data copy")}</h3><p>{actor?.role === "patient" ? t("Timu ya faragha itathibitisha na kushughulikia ombi. Kutuma ombi hakufuti wala kutuma taarifa papo hapo.", "The privacy team will verify and process the request. Submission does not immediately delete or send information.") : t("Timu ya faragha itathibitisha na kushughulikia ombi lako. Mabadiliko ya akaunti ya wafanyakazi hushughulikiwa na msimamizi wa utambulisho.", "The privacy team will verify and process your request. Workforce account changes are handled by the identity administrator.")}</p><div className="live-action-row"><Button disabled={busy} onClick={() => void mutate("privacy/requests", { kind: "export", idempotencyKey: crypto.randomUUID() })}>{t("Omba nakala", "Request a copy")}</Button>{actor?.role === "patient" ? <Button variant="danger" disabled={busy} onClick={() => setConfirmation({ title: t("Omba kufutwa kwa akaunti?", "Request account deletion?"), body: t("Hili litatuma ombi kwa timu ya faragha. Akaunti yako haitafutwa papo hapo.", "This sends a request to the privacy team. Your account will not be deleted immediately."), confirmLabel: t("Tuma ombi", "Send request"), tone: "danger", action: () => mutate("privacy/requests", { kind: "deletion", idempotencyKey: crypto.randomUUID() }) })}>{t("Omba kufutwa", "Request deletion")}</Button> : null}</div></section>
                 </div> : null}
 
                 {path === "privacy/requests" ? <div className="live-subsection-heading"><div><h3>{t("Historia ya maombi", "Request history")}</h3><p>{t("Hali ya maombi uliyowasilisha kupitia akaunti hii.", "Status of requests submitted from this account.")}</p></div></div> : null}
@@ -532,7 +529,6 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
                   if (isServices) return <article className="live-card" key={row.id}><p className="live-card-eyebrow">{row.mode === "virtual" ? t("Mtandaoni", "Online") : t("Ana kwa ana", "In person")}</p><h3>{language === "sw" ? row.nameSw : row.nameEn}</h3><p className="live-price">{formatMoney(row.priceTzs)}</p><p className="live-meta"><MapPin aria-hidden="true" /> {language === "sw" ? row.facility?.nameSw : row.facility?.nameEn}{row.facility?.locality ? ` — ${row.facility.locality}` : ""}</p>{row.facility?.accessibilityEn || row.facility?.accessibilitySw ? <p className="live-small">{language === "sw" ? row.facility?.accessibilitySw : row.facility?.accessibilityEn}</p> : null}{actor?.role === "patient" ? <Button variant="primary" className="live-card-action" disabled={busy} onClick={() => navigate(`providers/${provider!.id}/availability`, provider, row)}>{t("Chagua muda", "Choose a time")}<ArrowRight aria-hidden="true" /></Button> : <p className="live-card-note"><ShieldCheck aria-hidden="true" />{t("Kwa marejeo ya orodha ya huduma", "Directory reference")}</p>}</article>;
                   if (isAvailability) return <article className="live-card" key={row.id}><div className="live-card-topline"><span className="live-status">{row.mode === "virtual" ? t("Mtandaoni", "Online") : t("Ana kwa ana", "In person")}</span></div><h3>{formatDate(row.startsAt!)}</h3><p className="live-meta"><Clock3 aria-hidden="true" />{t("Saa za Afrika Mashariki", "East Africa Time")}</p>{service && actor?.role === "patient" && row.mode === service.mode ? <><div className="live-selection-summary"><span>{language === "sw" ? service.nameSw : service.nameEn}</span><strong>{formatMoney(service.priceTzs)}</strong></div><Button variant="primary" className="live-card-action" disabled={busy} onClick={() => setConfirmation({ title: t("Hifadhi muda huu?", "Hold this appointment time?"), body: t(`${formatDate(row.startsAt!)} utahifadhiwa kwa dakika 15 ili ukamilishe hatua zinazofuata.`, `${formatDate(row.startsAt!)} will be held for 15 minutes while you complete the next steps.`), confirmLabel: t("Hifadhi muda", "Hold time"), action: () => mutate("appointments", { slotId: row.id, serviceId: service.id, mode: row.mode, idempotencyKey: crypto.randomUUID() }) })}>{t("Kagua na uhifadhi", "Review and hold")}<ArrowRight aria-hidden="true" /></Button></> : null}</article>;
                   if (path === "appointments") return <article className="live-record-row" key={row.id}><div className="live-record-icon"><CalendarDays aria-hidden="true" /></div><div className="live-record-main"><div className="live-record-title"><h3>{formatDate(row.startsAt!)}</h3><span className={`live-status live-status-${row.status ?? "unknown"}`}>{statusLabel(row.status)}</span></div><div className="live-record-meta"><span>{row.mode === "virtual" ? t("Mtandaoni", "Online") : t("Ana kwa ana", "In person")}</span><span>{t("Saa za Afrika Mashariki", "East Africa Time")}</span>{row.amountTzs !== undefined ? <strong>{formatMoney(row.amountTzs, row.currency)}</strong> : null}</div>{actor?.role === "patient" && row.holdExpiresAt && row.status === "requested" ? <p className="live-hold-note"><Clock3 aria-hidden="true" />{t("Muda wa kuhifadhi unaisha", "Hold expires")} {new Date(row.holdExpiresAt).toLocaleTimeString(language === "sw" ? "sw-TZ" : "en-GB")}</p> : null}{actor?.role === "patient" && row.status === "requested" && (row.amountTzs ?? 0) > 0 ? <p className="live-warning"><CircleAlert aria-hidden="true" />{t("Malipo bado hayapatikani kwenye toleo hili. Miadi haijathibitishwa.", "Payment is not available in this release. The appointment is not confirmed.")}</p> : null}</div>{actor?.role === "patient" && ["requested", "confirmed"].includes(row.status ?? "") ? <div className="live-record-actions">{row.status === "requested" && row.amountTzs === 0 ? <Button variant="primary" disabled={busy} onClick={() => setConfirmation({ title: t("Thibitisha miadi?", "Confirm this appointment?"), body: t("Kagua muda hapo juu. Miadi hii haina malipo.", "Review the time above. This appointment has no charge."), confirmLabel: t("Thibitisha miadi", "Confirm appointment"), action: () => mutate(`appointments/${row.id}/confirm`, {}) })}>{t("Thibitisha", "Confirm")}</Button> : null}<Button variant="danger" disabled={busy} onClick={() => setConfirmation({ title: t("Ghairi miadi?", "Cancel this appointment?"), body: t("Muda huu utaachiliwa. Malipo yoyote yatahitaji kushughulikiwa kwa sera ya mtoa huduma.", "This time will be released. Any payment will be handled under the care provider's policy."), confirmLabel: t("Ghairi miadi", "Cancel appointment"), tone: "danger", action: () => mutate(`appointments/${row.id}/cancel`, {}) })}>{t("Ghairi", "Cancel")}</Button></div> : null}</article>;
-                  if (path === "payments") return <article className="live-record-row" key={row.id}><div className="live-record-icon"><WalletCards aria-hidden="true" /></div><div className="live-record-main"><div className="live-record-title"><h3>{t("Malipo", "Payment")} #{row.id.slice(-6).toUpperCase()}</h3><span className={`live-status live-status-${row.status ?? "unknown"}`}>{statusLabel(row.status)}</span></div><div className="live-record-meta"><span>{row.createdAt ? formatDate(row.createdAt) : "—"}</span><span>{t("Imeunganishwa na miadi yako", "Linked to your appointment")}</span></div></div><strong className="live-record-amount">{formatMoney(row.amountTzs, row.currency)}</strong></article>;
                   if (path === "navigator/assignments") return <article className="live-record-row" key={row.id}><div className="live-record-icon"><ClipboardList aria-hidden="true" /></div><div className="live-record-main"><div className="live-record-title"><h3>{t("Kazi", "Assignment")} #{row.id.slice(-6).toUpperCase()}</h3><span className={`live-status live-status-${row.status ?? "unknown"}`}>{statusLabel(row.status)}</span></div><div className="live-record-meta"><span>{t("Ilipangwa", "Assigned")} {row.assignedAt ? formatDate(row.assignedAt) : "—"}</span><span>{t("Kazi iliyoidhinishwa", "Authorized work item")}</span></div></div></article>;
                   return <article className="live-record-row" key={row.id}><div className="live-record-icon"><ShieldCheck aria-hidden="true" /></div><div className="live-record-main"><div className="live-record-title"><h3>{row.kind === "export" ? t("Ombi la nakala", "Data copy request") : t("Ombi la kufuta", "Deletion request")}</h3><span className={`live-status live-status-${row.status ?? "unknown"}`}>{statusLabel(row.status)}</span></div><div className="live-record-meta"><span>{t("Iliwasilishwa", "Submitted")} {row.createdAt ? formatDate(row.createdAt) : "—"}</span></div></div></article>;
                 })}</div> : null}

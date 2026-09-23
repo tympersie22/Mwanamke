@@ -187,6 +187,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     if (!authorization) return;
     const body = z.object({ kind: z.enum(["export", "deletion"]), idempotencyKey: z.string().min(8).max(80) }).strict().safeParse(request.body);
     if (!body.success) return reply.code(422).send({ error: "INVALID_PRIVACY_REQUEST" });
+    if (body.data.kind === "deletion" && authorization.actor.role !== "patient") return reply.code(403).send({ error: "WORKFORCE_ACCOUNT_MANAGED" });
     try {
       const result = await store.createPrivacyRequest(authorization.actor.userId, body.data.kind, body.data.idempotencyKey);
       return reply.code(result.created ? 201 : 200).send({ data: privacyRequestDto.parse(result.data) });
@@ -196,13 +197,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     }
   });
   app.get("/v1/providers", async (request, reply) => {
-    if (!await requireActor(request, reply, authenticator, store, humanRoles)) return;
+    if (!await requireActor(request, reply, authenticator, store, ["patient", "navigator"])) return;
     const query = pageQuery.safeParse(request.query);
     if (!query.success) return reply.code(422).send({ error: "INVALID_PAGINATION" });
     return validatedPage(providerDto, await store.listProviders(query.data));
   });
   app.get("/v1/providers/:id", async (request, reply) => {
-    if (!await requireActor(request, reply, authenticator, store, humanRoles)) return;
+    if (!await requireActor(request, reply, authenticator, store, ["patient", "navigator"])) return;
     const id = z.string().uuid().safeParse((request.params as { id: string }).id);
     if (!id.success) return reply.code(422).send({ error: "INVALID_ID" });
     const provider = await store.getProvider(id.data);
@@ -210,7 +211,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     return { data: providerDto.parse(provider) };
   });
   app.get("/v1/providers/:id/services", async (request, reply) => {
-    if (!await requireActor(request, reply, authenticator, store, humanRoles)) return;
+    if (!await requireActor(request, reply, authenticator, store, ["patient", "navigator"])) return;
     const id = z.string().uuid().safeParse((request.params as { id: string }).id);
     const query = pageQuery.safeParse(request.query);
     if (!id.success || !query.success) return reply.code(422).send({ error: "INVALID_QUERY" });
@@ -218,7 +219,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     return validatedPage(serviceDto, await store.listServices(id.data, query.data));
   });
   app.get("/v1/providers/:id/availability", async (request, reply) => {
-    if (!await requireActor(request, reply, authenticator, store, humanRoles)) return;
+    if (!await requireActor(request, reply, authenticator, store, ["patient", "navigator"])) return;
     const id = z.string().uuid().safeParse((request.params as { id: string }).id);
     const query = pageQuery.safeParse(request.query);
     if (!id.success || !query.success) return reply.code(422).send({ error: "INVALID_QUERY" });

@@ -110,14 +110,20 @@ export function PatientSpace({
     ["perimenopause", t("Kuelekea ukomo wa hedhi", "Perimenopause")]
   ];
 
-  const symptomOptions: Array<[string, string]> = [
-    ["cramps", t("Maumivu ya tumbo", "Cramps")],
-    ["headache", t("Kichwa", "Headache")],
-    ["bloating", t("Kuvimba", "Bloating")],
-    ["tenderness", t("Matiti", "Tender breasts")],
-    ["backache", t("Mgongo", "Backache")],
-    ["none", t("Hakuna", "None")]
-  ];
+  const symptomOptions: Record<LifeStage, Array<[string, string]>> = {
+    cycle: [["cramps", t("Maumivu ya tumbo", "Cramps")], ["headache", t("Kichwa", "Headache")], ["bloating", t("Kuvimba", "Bloating")], ["tenderness", t("Matiti", "Tender breasts")], ["backache", t("Mgongo", "Backache")], ["none", t("Hakuna", "None")]],
+    pregnancy: [["nausea", t("Kichefuchefu", "Nausea")], ["headache", t("Kichwa", "Headache")], ["backache", t("Mgongo", "Backache")], ["swelling", t("Kuvimba mwili", "Swelling")], ["none", t("Hakuna", "None")]],
+    postpartum: [["pain", t("Maumivu", "Pain")], ["bleeding", t("Kutokwa damu", "Bleeding")], ["fever", t("Homa", "Fever")], ["low-mood", t("Hali ya huzuni", "Low mood")], ["none", t("Hakuna", "None")]],
+    perimenopause: [["hot-flush", t("Joto la ghafla", "Hot flush")], ["poor-sleep", t("Usingizi hafifu", "Poor sleep")], ["headache", t("Kichwa", "Headache")], ["mood-change", t("Mabadiliko ya hisia", "Mood change")], ["none", t("Hakuna", "None")]]
+  };
+
+  const insightCopy: Record<LifeStage, { title: string; body: string; action?: string; view?: PatientView }> = {
+    cycle: { title: t("Nguvu huwa juu baada ya hedhi", "Energy tends to rise after your period"), body: t("Umeweka kumbukumbu hii katika mizunguko 3 iliyopita. Endelea kurekodi ili kuona kama inaendelea.", "This appeared across your last 3 cycles. Keep logging to see whether the pattern continues."), action: t("Angalia mienendo", "Explore patterns"), view: "cycle" },
+    pregnancy: { title: t("Ratiba yako ya ujauzito", "Your pregnancy timeline"), body: t("Fuatilia hatua, ziara za kliniki na vitu vya kuzingatia kwa wiki yako ya ujauzito.", "Follow your stage, antenatal visits, and priorities for your current pregnancy week."), action: t("Fungua ratiba", "Open timeline"), view: "pregnancy" },
+    postpartum: { title: t("Kupona hubadilika kila wiki", "Recovery changes week by week"), body: t("Rekodi maumivu, hisia, usingizi na ulishaji ili uone mabadiliko yanayoendelea.", "Log pain, mood, sleep, and feeding to understand how recovery is changing.") },
+    perimenopause: { title: t("Mienendo huonekana baada ya muda", "Patterns become clearer over time"), body: t("Rekodi usingizi, joto la ghafla na hisia ili kulinganisha mabadiliko ya siku tofauti.", "Log sleep, hot flushes, and mood to compare changes across days.") }
+  };
+  const activeInsight = insightCopy[stage];
 
   const quickLog = (
     <section className="patient-card patient-checkin" aria-labelledby="daily-checkin-title">
@@ -126,16 +132,16 @@ export function PatientSpace({
           <p className="patient-eyebrow"><Sparkles aria-hidden="true" />{t("Dakika moja", "One minute")}</p>
           <h3 id="daily-checkin-title">{t("Ukoje leo?", "How are you today?")}</h3>
         </div>
-        <span>{t("14 Septemba", "14 Sep")}</span>
+        <span>{t("Leo", "Today")}</span>
       </div>
-      <div className="patient-log-section">
+      {stage === "cycle" ? <div className="patient-log-section">
         <span className="patient-log-label"><Droplets aria-hidden="true" />{t("Mtiririko", "Flow")}</span>
         <div className="patient-choice-row" role="group" aria-label={t("Chagua kiwango cha mtiririko", "Choose flow level")}>
           {([ ["none", t("Hakuna", "None")], ["light", t("Kidogo", "Light")], ["medium", t("Wastani", "Medium")], ["heavy", t("Mwingi", "Heavy")] ] as Array<[string, string]>).map(([value, label]) => (
             <button type="button" key={value} aria-pressed={flow === value} onClick={() => { setFlow(value); setSaved(false); }}>{label}</button>
           ))}
         </div>
-      </div>
+      </div> : null}
       <div className="patient-log-section">
         <span className="patient-log-label"><SunMedium aria-hidden="true" />{t("Hisia", "Mood")}</span>
         <div className="patient-mood-row" role="group" aria-label={t("Chagua hisia", "Choose mood")}>
@@ -147,7 +153,7 @@ export function PatientSpace({
       <div className="patient-log-section">
         <span className="patient-log-label"><Activity aria-hidden="true" />{t("Dalili", "Symptoms")}</span>
         <div className="patient-chip-row" role="group" aria-label={t("Chagua dalili", "Choose symptoms")}>
-          {symptomOptions.map(([value, label]) => <button type="button" key={value} aria-pressed={symptoms.has(value)} onClick={() => toggleSymptom(value)}>{symptoms.has(value) ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}{label}</button>)}
+          {symptomOptions[stage].map(([value, label]) => <button type="button" key={value} aria-pressed={symptoms.has(value)} onClick={() => toggleSymptom(value)}>{symptoms.has(value) ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}{label}</button>)}
         </div>
       </div>
       <button type="button" className="patient-save" onClick={() => setSaved(true)}>{saved ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}{saved ? t("Imehifadhiwa kwa kipindi hiki", "Saved for this session") : t("Hifadhi kumbukumbu ya leo", "Save today’s check-in")}</button>
@@ -191,7 +197,7 @@ export function PatientSpace({
           <div className="patient-pregnancy-ring" aria-label={t("Asilimia 61 ya ujauzito", "61 percent through pregnancy")}><div><Baby aria-hidden="true" /><strong>61%</strong><small>{t("imefika", "complete")}</small></div></div>
         </section>
         <div className="patient-pregnancy-grid">
-          <section className="patient-card patient-next-visit"><div className="patient-card-heading"><div><p className="patient-eyebrow"><CalendarDays aria-hidden="true" />{t("Huduma ijayo", "Next care")}</p><h3>{t("Ziara ya kliniki ya wajawazito", "Antenatal visit")}</h3></div><span>{t("Siku 2", "2 days")}</span></div><p>{t("Jumatano, 16 Septemba · saa 3:30 asubuhi", "Wednesday, 16 September · 9:30 AM")}</p><strong>{t("Kliniki ya Wanawake Bahari · Mkunazini", "Bahari Women’s Clinic · Mkunazini")}</strong><button type="button" onClick={onOpenAppointments}>{t("Angalia maelezo ya miadi", "View appointment details")}<ChevronRight aria-hidden="true" /></button></section>
+          <section className="patient-card patient-next-visit"><div className="patient-card-heading"><div><p className="patient-eyebrow"><CalendarDays aria-hidden="true" />{t("Huduma ijayo", "Next care")}</p><h3>{t("Miadi ya kliniki ya wajawazito", "Antenatal appointments")}</h3></div></div><p>{t("Angalia miadi yako iliyoombwa na iliyothibitishwa katika ratiba ya huduma.", "Review requested and confirmed visits in your care schedule.")}</p><button type="button" onClick={onOpenAppointments}>{t("Fungua miadi", "Open appointments")}<ChevronRight aria-hidden="true" /></button></section>
           <section className="patient-card patient-today-list"><div className="patient-card-heading"><div><p className="patient-eyebrow"><HeartPulse aria-hidden="true" />{t("Leo", "Today")}</p><h3>{t("Vitu vitatu vya kuzingatia", "Three gentle priorities")}</h3></div></div><ul><li><Check aria-hidden="true" /><span><strong>{t("Dawa na virutubisho", "Medicine & supplements")}</strong><small>{t("Fuata maelekezo ya mhudumu wako", "Follow your care professional’s instructions")}</small></span></li><li><Moon aria-hidden="true" /><span><strong>{t("Usingizi na nguvu", "Sleep & energy")}</strong><small>{t("Rekodi ulivyolala na unavyojisikia", "Log how you slept and feel")}</small></span></li><li><Activity aria-hidden="true" /><span><strong>{t("Harakati za mtoto", "Baby movement")}</strong><small>{t("Ukiona mabadiliko, wasiliana na mhudumu", "Contact care if movement changes")}</small></span></li></ul></section>
         </div>
         <section className="patient-card patient-care-plan"><div className="patient-card-heading"><div><p className="patient-eyebrow"><Stethoscope aria-hidden="true" />{t("Mpango wa huduma", "Care plan")}</p><h3>{t("Ziara 8 za kliniki", "8 antenatal contacts")}</h3></div><strong>3/8</strong></div><div className="patient-progress-track"><span style={{ width: "37.5%" }} /></div><div className="patient-milestones"><span className="done">8–12</span><span className="done">20</span><span className="done">26</span><span>30</span><span>34</span><span>36</span><span>38</span><span>40</span></div><p>{t("Ratiba hii inafuata mfano wa mawasiliano nane wa WHO; mhudumu wako anaweza kubadilisha ratiba kulingana na mahitaji yako.", "This follows the WHO eight-contact model; your care professional may adjust the schedule for your needs.")}</p></section>
@@ -204,8 +210,8 @@ export function PatientSpace({
   const activeCopy = stageCopy[stage];
   return (
     <div className="patient-space patient-enter">
-      <header className="patient-page-head patient-home-head"><div><p className="patient-eyebrow">{t("Jumatatu, 14 Septemba", "Monday, 14 September")}</p><h1>{t("Habari, Amina", "Hello, Amina")}</h1><p>{t("Haya ndiyo muhimu kwako leo.", "Here’s what matters for you today.")}</p></div><span className="patient-private-badge"><ShieldCheck aria-hidden="true" />{t("Una udhibiti", "You’re in control")}</span></header>
-      <div className="patient-stage-picker" role="tablist" aria-label={t("Chagua hatua ya afya", "Choose health stage")}>{stageLabels.map(([value, label]) => <button type="button" role="tab" key={value} aria-selected={stage === value} onClick={() => setStage(value)}>{label}</button>)}</div>
+      <header className="patient-page-head patient-home-head"><div><p className="patient-eyebrow">{t("Leo", "Today")}</p><h1>{t("Karibu", "Welcome")}</h1><p>{t("Haya ndiyo muhimu kwako leo.", "Here’s what matters for you today.")}</p></div><span className="patient-private-badge"><ShieldCheck aria-hidden="true" />{t("Una udhibiti", "You’re in control")}</span></header>
+      <div className="patient-stage-picker" role="tablist" aria-label={t("Chagua hatua ya afya", "Choose health stage")}>{stageLabels.map(([value, label]) => <button type="button" role="tab" key={value} aria-selected={stage === value} onClick={() => { setStage(value); setSymptoms(new Set()); setSaved(false); }}>{label}</button>)}</div>
       <section className={`patient-stage-hero stage-${stage}`}>
         <div className="patient-stage-copy"><p>{activeCopy.label}</p><h2>{activeCopy.headline}</h2><span>{activeCopy.body}</span>{stage === "cycle" || stage === "pregnancy" ? <button type="button" onClick={() => onNavigate(stage === "pregnancy" ? "pregnancy" : "cycle")}>{stage === "pregnancy" ? t("Fungua ratiba ya ujauzito", "Open pregnancy timeline") : t("Fungua kalenda", "Open calendar")}<ArrowRight aria-hidden="true" /></button> : null}</div>
         <div className="patient-stage-visual" aria-hidden="true"><div className="patient-stage-ring"><span>{stage === "pregnancy" ? <Baby /> : stage === "postpartum" ? <HeartPulse /> : stage === "perimenopause" ? <TrendingUp /> : <Droplets />}</span></div><i /><i /></div>
@@ -214,8 +220,8 @@ export function PatientSpace({
       <div className="patient-home-grid">
         {quickLog}
         <div className="patient-home-side">
-          <section className="patient-card patient-insight-card"><div className="patient-insight-icon"><TrendingUp aria-hidden="true" /></div><p className="patient-eyebrow">{t("Mwenendo wako", "Your pattern")}</p><h3>{t("Nguvu huwa juu baada ya hedhi", "Energy tends to rise after your period")}</h3><p>{t("Umeweka kumbukumbu hii katika mizunguko 3 iliyopita. Endelea kurekodi ili kuona kama inaendelea.", "This appeared across your last 3 cycles. Keep logging to see whether the pattern continues.")}</p><button type="button" onClick={() => onNavigate("cycle")}>{t("Angalia mienendo", "Explore patterns")}<ChevronRight aria-hidden="true" /></button></section>
-          <section className="patient-card patient-care-card"><span><CalendarDays aria-hidden="true" /></span><div><p className="patient-eyebrow">{t("Miadi inayofuata", "Next appointment")}</p><h3>{t("Jumatano · 3:30 asubuhi", "Wednesday · 9:30 AM")}</h3><p>{t("Kliniki ya Wanawake Bahari", "Bahari Women’s Clinic")}</p></div><button type="button" aria-label={t("Fungua miadi", "Open appointments")} onClick={onOpenAppointments}><ChevronRight aria-hidden="true" /></button></section>
+          <section className="patient-card patient-insight-card"><div className="patient-insight-icon"><TrendingUp aria-hidden="true" /></div><p className="patient-eyebrow">{t("Mwenendo wako", "Your pattern")}</p><h3>{activeInsight.title}</h3><p>{activeInsight.body}</p>{activeInsight.action && activeInsight.view ? <button type="button" onClick={() => onNavigate(activeInsight.view!)}>{activeInsight.action}<ChevronRight aria-hidden="true" /></button> : null}</section>
+          <section className="patient-card patient-care-card"><span><CalendarDays aria-hidden="true" /></span><div><p className="patient-eyebrow">{t("Miadi", "Appointments")}</p><h3>{t("Kagua ratiba yako ya huduma", "Review your care schedule")}</h3><p>{t("Ona miadi iliyoombwa na iliyothibitishwa.", "See requested and confirmed appointments.")}</p></div><button type="button" aria-label={t("Fungua miadi", "Open appointments")} onClick={onOpenAppointments}><ChevronRight aria-hidden="true" /></button></section>
           <section className="patient-privacy-strip"><LockKeyhole aria-hidden="true" /><div><strong>{t("Kumbukumbu zako ni binafsi", "Your entries are private")}</strong><p>{t("Hakuna mhudumu anayeweza kuziona bila ruhusa yako ya wazi.", "No care professional can see them without your explicit consent.")}</p></div></section>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { apiBase, isSameOrigin, readSession } from "@/lib/session";
-const allowed = /^(me|profile|privacy\/requests|providers|providers\/[a-zA-Z0-9-]+(?:\/(?:availability|services))?|appointments|payments|navigator\/assignments|admin\/aggregate)$/;
+const allowed = /^(me|profile|privacy\/requests|providers|providers\/[a-zA-Z0-9-]+(?:\/(?:availability|services))?|appointments|navigator\/assignments|admin\/aggregate)$/;
 export async function GET(request: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const path = (await params).path.join("/");
   if (!allowed.test(path)) return Response.json({ error: "NOT_FOUND" }, { status: 404 });
