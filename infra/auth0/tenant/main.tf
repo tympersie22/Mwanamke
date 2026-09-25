@@ -109,7 +109,7 @@ resource "auth0_connection" "patient" {
   options {
     disable_signup         = false
     brute_force_protection = true
-    password_policy        = "excellent"
+    password_policy        = "excellent" # gitleaks:allow (Auth0 policy-strength enum)
     authentication_methods {
       password { enabled = true }
       passkey { enabled = true }
@@ -129,7 +129,7 @@ resource "auth0_connection" "workforce" {
     disable_signup                       = true
     disable_self_service_change_password = false
     brute_force_protection               = true
-    password_policy                      = "excellent"
+    password_policy                      = "excellent" # gitleaks:allow (Auth0 policy-strength enum)
     authentication_methods {
       password { enabled = true }
       passkey { enabled = true }

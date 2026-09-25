@@ -102,7 +102,7 @@ svg { flex: 0 0 auto; }
 .public-info-card > h1 { max-width: 620px; }
 .public-info-icon { width: 42px; height: 42px; margin: 32px 0 8px; color: var(--brand); }
 .public-info-danger { color: #9f3e37; }
-.public-info-section { margin: 22px 0; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-soft); }
+.public-info-section { margin: 22px 0; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-warm); }
 .public-info-section h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 8px; font-size: 1.1rem; }
 .public-info-section h2 svg, .public-urgent svg, .public-security-note svg { width: 19px; flex: 0 0 19px; }
 .public-info-section p { margin: 0; }
