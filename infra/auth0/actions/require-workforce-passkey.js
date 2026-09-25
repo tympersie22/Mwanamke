@@ -1,17 +1,26 @@
 /**
- * Auth0 Workforce tenant, post-login Action.
- * Deploy only in the workforce tenant and bind it to the workforce applications.
- * The API independently verifies the signed token and repeats the phishing-resistant check.
+ * Emits a namespaced authentication-method claim after the preceding Action's
+ * phishing-resistant challenge. The API verifies this signed claim again.
  */
 exports.onExecutePostLogin = async (event, api) => {
-  const methods = (event.authentication?.methods ?? []).flatMap((method) => [method.name, method.type]).filter(Boolean).map(String);
-  const accepted = new Set(["passkey", "webauthn", "webauthn-platform", "webauthn-roaming", "fido2", "hwk"]);
-  if (!methods.some((method) => accepted.has(method.toLowerCase()))) {
+  if (event.client?.metadata?.realm !== "workforce") return;
+  if (event.user.email_verified !== true || typeof event.user.email !== "string") {
+    api.access.deny("A verified workforce email is required.");
+    return;
+  }
+
+  const factors = (event.authentication?.methods ?? [])
+    .filter((method) => method?.name === "mfa")
+    .map((method) => String(method.type ?? "").toLowerCase());
+  const accepted = new Set(["webauthn-platform", "webauthn-roaming"]);
+  if (!factors.some((factor) => accepted.has(factor))) {
     api.access.deny("A MWANAMKE workforce account must use a phishing-resistant passkey or security key.");
     return;
   }
 
   const claim = "https://mwanamke.africa/amr";
-  api.idToken.setCustomClaim(claim, methods);
-  api.accessToken.setCustomClaim(claim, methods);
+  api.idToken.setCustomClaim(claim, factors);
+  api.accessToken.setCustomClaim(claim, factors);
+  api.accessToken.setCustomClaim("https://mwanamke.africa/email", event.user.email);
+  api.accessToken.setCustomClaim("https://mwanamke.africa/email_verified", true);
 };

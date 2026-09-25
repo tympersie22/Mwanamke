@@ -40,3 +40,6 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+__pycache__/
+*.pyc
+infra/aws/audit-sink/sink.zip

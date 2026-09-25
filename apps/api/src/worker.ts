@@ -1,10 +1,10 @@
-import { MockNotificationAdapter, MockPaymentAdapter } from "./adapters.js";
+import { DisabledNotificationAdapter, DisabledPaymentAdapter, MockNotificationAdapter, MockPaymentAdapter } from "./adapters.js";
 import { loadRuntimeConfig } from "./config.js";
 import { runOutboxLoop } from "./outbox-worker.js";
 import { createApplicationStore } from "./store.js";
 
 const configuration = loadRuntimeConfig();
-if (configuration.adapters.payment !== "mock" || configuration.adapters.notification !== "mock") {
+if (configuration.adapters.payment === "configured" || configuration.adapters.notification === "configured") {
   throw new Error("Configured production partner adapters must be injected by the deployment composition root.");
 }
 
@@ -15,7 +15,9 @@ process.once("SIGINT", stop);
 process.once("SIGTERM", stop);
 
 try {
-  await runOutboxLoop(store, configuration, new MockPaymentAdapter(), new MockNotificationAdapter(), controller.signal);
+  const payment = configuration.adapters.payment === "disabled" ? new DisabledPaymentAdapter() : new MockPaymentAdapter();
+  const notifications = configuration.adapters.notification === "disabled" ? new DisabledNotificationAdapter() : new MockNotificationAdapter();
+  await runOutboxLoop(store, configuration, payment, notifications, controller.signal);
 } finally {
   await store.close();
 }

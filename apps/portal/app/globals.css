@@ -98,6 +98,16 @@ svg { flex: 0 0 auto; }
 .live-trust-strip strong { color: var(--ink); font-size: .82rem; }
 
 .live-content-section, .live-privacy-section { max-width: var(--content); margin: 0 auto; padding: 20px 28px 120px; }
+.public-info-card { max-width: 700px; text-align: left; }
+.public-info-card > h1 { max-width: 620px; }
+.public-info-icon { width: 42px; height: 42px; margin: 32px 0 8px; color: var(--brand); }
+.public-info-danger { color: #9f3e37; }
+.public-info-section { margin: 22px 0; padding: 20px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface-soft); }
+.public-info-section h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 8px; font-size: 1.1rem; }
+.public-info-section h2 svg, .public-urgent svg, .public-security-note svg { width: 19px; flex: 0 0 19px; }
+.public-info-section p { margin: 0; }
+.public-urgent, .public-security-note { display: flex; gap: 10px; align-items: flex-start; padding: 16px; border-radius: 14px; background: #fff1e9; color: #713719; }
+.public-security-note { background: var(--brand-soft); color: var(--ink); }
 .live-section-intro { max-width: 650px; margin-bottom: 44px; }
 .live-section-intro h2 { margin-top: 9px; }
 .live-step-grid { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; list-style: none; }

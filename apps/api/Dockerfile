@@ -12,6 +12,10 @@ COPY . .
 RUN npm run prisma:generate -w @mwanamke/api
 RUN npm run build -w @mwanamke/api
 
+FROM build AS migration
+ENV NODE_ENV=production
+CMD ["npm", "run", "prisma:migrate", "-w", "@mwanamke/api"]
+
 FROM node:22-alpine AS runtime-dependencies
 WORKDIR /app
 COPY package*.json ./

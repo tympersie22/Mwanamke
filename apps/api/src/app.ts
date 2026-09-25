@@ -311,6 +311,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     if (!authorization) return;
     const parsed = paymentSchema.safeParse(request.body);
     if (!parsed.success) return reply.code(422).send({ error: "INVALID_PAYMENT" });
+    if (configuration.adapters.payment === "disabled") return reply.code(503).send({ error: "PAYMENTS_NOT_AVAILABLE" });
     try {
       const result = await store.queuePayment(authorization.actor.userId, parsed.data);
       return reply.code(result.idempotent ? 200 : 202).send(result);

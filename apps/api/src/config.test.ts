@@ -57,4 +57,9 @@ describe("production runtime configuration", () => {
     expect(configuration.allowDemoAuth).toBe(false);
     expect(configuration.features.encryptedRecords).toBe(false);
   });
+
+  it("allows partner services to stay explicitly disabled during the controlled pilot", () => {
+    const configuration = loadRuntimeConfig(productionEnvironment({ PAYMENT_ADAPTER: "disabled", NOTIFICATION_ADAPTER: "disabled" }));
+    expect(configuration.adapters).toMatchObject({ payment: "disabled", notification: "disabled" });
+  });
 });

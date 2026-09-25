@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
+    "test": "vitest run lib/*.test.ts",
     "export": "expo export --platform all"
   },
   "dependencies": {

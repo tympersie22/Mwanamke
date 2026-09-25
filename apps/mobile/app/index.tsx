@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { apiUrl, clearSession, restoreSession, signIn, type Session } from "@/lib/auth";
 import { PatientPortalPreview, type PatientPortalPreviewView } from "@/components/PatientPortalPreview";
 import { PatientTracker, type PatientTrackerView } from "@/components/PatientTracker";
+import { lockPrivateVault } from "@/lib/vault";
 
 type Row = { id: string; displayName?: string; titleEn?: string; titleSw?: string; languages?: string[]; status?: string; startsAt?: string; mode?: string; amountTzs?: number; currency?: string; nameEn?: string; nameSw?: string; priceTzs?: number; holdExpiresAt?: string; kind?: "export"|"deletion"; createdAt?: string; facility?: { nameEn: string; nameSw: string; locality: string; accessibilityEn: string; accessibilitySw: string } };
 type Actor = { id: string; role: string };
@@ -66,7 +67,7 @@ export default function MobileApp() {
   useEffect(() => {
     let backgrounded = false;
     const subscription = AppState.addEventListener("change", state => {
-      if (state !== "active") { backgrounded = true; setObscured(true); setLocked(true); return; }
+      if (state !== "active") { backgrounded = true; lockPrivateVault(); setObscured(true); setLocked(true); return; }
       setObscured(false);
       if (!backgrounded || !session) { setLocked(false); return; }
       void LocalAuthentication.authenticateAsync({ promptMessage: t("Fungua taarifa zako binafsi", "Unlock your private records"), biometricsSecurityLevel: "strong", disableDeviceFallback: true }).then(result => setLocked(!result.success)).catch(() => setLocked(true));
@@ -74,7 +75,7 @@ export default function MobileApp() {
     });
     return () => subscription.remove();
   }, [session, language]);
-  const logout = async () => { await clearSession(); setSession(null); setActor(null); setRows([]); setMetrics({}); setPatientPreview(false); setStep("privacy"); };
+  const logout = async () => { lockPrivateVault(); await clearSession(); setSession(null); setActor(null); setRows([]); setMetrics({}); setPatientPreview(false); setStep("privacy"); };
   const request = async (endpoint:string, current:Session) => {
     if(current.expiresAt <= Date.now()) { await logout(); throw new Error(t("Kipindi kimeisha. Ingia tena.","Session expired. Please sign in again.")); }
     const response = await fetch(`${apiUrl()}/v1/${endpoint}`,{headers:{Authorization:`Bearer ${current.accessToken}`}});

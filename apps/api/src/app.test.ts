@@ -73,6 +73,17 @@ describe("MWANAMKE API privacy boundary", () => {
   });
 });
 
+describe("pilot service boundaries", () => {
+  it("does not queue a payment when production payment integration is disabled", async () => {
+    const app = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true", PAYMENT_ADAPTER: "disabled" }) });
+    try {
+      const response = await app.inject({ method: "POST", url: "/v1/payments/reserve", headers: { authorization: "Bearer dev:patient:patient-1" }, payload: { appointmentId: "00000000-0000-4000-8000-000000000010", amountTzs: 35000, method: "mpesa", idempotencyKey: "disabled-payment-test" } });
+      expect(response.statusCode).toBe(503);
+      expect(response.json()).toEqual({ error: "PAYMENTS_NOT_AVAILABLE" });
+    } finally { await app.close(); }
+  });
+});
+
 describe("Authorized list DTOs", () => {
   it("requires authentication, rejects oversized pages and does not return demo providers", async () => {
     const app = await buildApp({ configuration: loadRuntimeConfig({ NODE_ENV: "test", ALLOW_DEMO_AUTH: "true", ALLOW_DEMO_DATA: "true", ENABLE_ENCRYPTED_RECORDS: "true" }) });

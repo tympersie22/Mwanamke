@@ -27,6 +27,7 @@ function bearerToken(request: FastifyRequest): string | null {
 }
 
 function claimAtPath(payload: JWTPayload, path: string): unknown {
+  if (Object.prototype.hasOwnProperty.call(payload, path)) return payload[path];
   return path.split(".").reduce<unknown>((value, segment) => {
     if (typeof value !== "object" || value === null) return undefined;
     return (value as Record<string, unknown>)[segment];
@@ -72,7 +73,9 @@ export class OidcAuthenticator implements Authenticator {
         const roles = allowedRoles(claimAtPath(payload, candidate.configuration.rolesClaim));
         if (candidate.realm === "patient" && roles.some((role) => role !== "patient")) return null;
         if (candidate.realm === "workforce" && roles.includes("patient")) return null;
-        return { issuer: payload.iss ?? candidate.configuration.issuer, subject: payload.sub, roles, realm: candidate.realm, authenticationMethods, ...(typeof payload.email === "string" ? { email: payload.email } : {}), ...(payload.email_verified === true ? { emailVerified: true } : {}) };
+        const email = payload["https://mwanamke.africa/email"] ?? payload.email;
+        const emailVerified = payload["https://mwanamke.africa/email_verified"] ?? payload.email_verified;
+        return { issuer: payload.iss ?? candidate.configuration.issuer, subject: payload.sub, roles, realm: candidate.realm, authenticationMethods, ...(typeof email === "string" ? { email } : {}), ...(emailVerified === true ? { emailVerified: true } : {}) };
       } catch {
         // Try the second explicitly configured realm; the token must match issuer and audience.
       }

@@ -32,8 +32,8 @@ const environmentSchema = z.object({
   AUDIT_SINK_URL: z.string().url().optional(),
   AUDIT_SINK_TOKEN: z.string().min(32).optional(),
   REDIS_URL: z.string().url().optional(),
-  PAYMENT_ADAPTER: z.enum(["mock", "configured"]).default("mock"),
-  NOTIFICATION_ADAPTER: z.enum(["mock", "configured"]).default("mock"),
+  PAYMENT_ADAPTER: z.enum(["mock", "configured", "disabled"]).default("mock"),
+  NOTIFICATION_ADAPTER: z.enum(["mock", "configured", "disabled"]).default("mock"),
   TELECONSULT_ADAPTER: z.enum(["disabled", "configured"]).default("disabled"),
   BLOODMATCH_ADAPTER: z.enum(["disabled", "configured"]).default("disabled"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
@@ -60,8 +60,8 @@ const environmentSchema = z.object({
     [Boolean(environment.AUDIT_SINK_URL?.startsWith("https://")), "AUDIT_SINK_URL", "A HTTPS append-only audit sink is required."],
     [Boolean(environment.AUDIT_SINK_TOKEN), "AUDIT_SINK_TOKEN", "An audit sink credential is required."],
     [Boolean(environment.REDIS_URL?.startsWith("rediss://")), "REDIS_URL", "A TLS Redis rate-limit store is required."],
-    [environment.PAYMENT_ADAPTER === "configured", "PAYMENT_ADAPTER", "Mock payments are forbidden in production."],
-    [environment.NOTIFICATION_ADAPTER === "configured", "NOTIFICATION_ADAPTER", "Mock notifications are forbidden in production."],
+    [environment.PAYMENT_ADAPTER !== "mock", "PAYMENT_ADAPTER", "Mock payments are forbidden in production."],
+    [environment.NOTIFICATION_ADAPTER !== "mock", "NOTIFICATION_ADAPTER", "Mock notifications are forbidden in production."],
     [!environment.ALLOW_DEMO_AUTH, "ALLOW_DEMO_AUTH", "Demo authentication is forbidden in production."],
     [!environment.ALLOW_DEMO_DATA, "ALLOW_DEMO_DATA", "Demo data is forbidden in production."]
   ];
@@ -112,7 +112,7 @@ export type RuntimeConfig = {
   auditSinkUrl: string | undefined;
   auditSinkToken: string | undefined;
   redisUrl: string | undefined;
-  adapters: { payment: "mock" | "configured"; notification: "mock" | "configured"; teleconsult: "disabled" | "configured"; bloodmatch: "disabled" | "configured" };
+  adapters: { payment: "mock" | "configured" | "disabled"; notification: "mock" | "configured" | "disabled"; teleconsult: "disabled" | "configured"; bloodmatch: "disabled" | "configured" };
   logLevel: "fatal" | "error" | "warn" | "info" | "debug" | "trace" | "silent";
   trustProxy: boolean;
   outbox: { pollMs: number; maxAttempts: number; workerId: string };

@@ -21,3 +21,11 @@ tests/fixtures
 **/*.ipa
 **/*.apk
 **/*.aab
+**/.env
+**/.env.*
+**/.terraform
+**/*.tfvars
+**/*.tfstate*
+**/*.tfplan
+**/__pycache__
+**/*.md

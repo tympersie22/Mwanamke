@@ -23,6 +23,12 @@ export class MockPaymentAdapter implements PaymentAdapter {
   }
 }
 
+export class DisabledPaymentAdapter implements PaymentAdapter {
+  async reserve(request: PaymentRequest): Promise<PaymentResult> {
+    return { adapterReference: `disabled:${request.appointmentId}`, status: "failed", retryable: false };
+  }
+}
+
 export interface NotificationAdapter {
   sendNeutralUpdate(deviceId: string, eventId: string): Promise<{ queued: boolean }>;
 }
@@ -30,6 +36,12 @@ export interface NotificationAdapter {
 export class MockNotificationAdapter implements NotificationAdapter {
   async sendNeutralUpdate(_deviceId: string, _eventId: string): Promise<{ queued: boolean }> {
     return { queued: true };
+  }
+}
+
+export class DisabledNotificationAdapter implements NotificationAdapter {
+  async sendNeutralUpdate(): Promise<{ queued: boolean }> {
+    return { queued: false };
   }
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { MedicationRemindersScreen, MedicationSummaryCard, useMedicineReminders } from "@/components/MedicationReminders";
+import { PrivatePatientTracker } from "@/components/PrivatePatientTracker";
 
 export type PatientTrackerView = "personal" | "cycle" | "pregnancy" | "reminders";
 type Language = "sw" | "en";
@@ -17,7 +18,11 @@ function Choice({ label, selected, onPress }: { label: string; selected: boolean
   return <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.pressed]}><Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text></Pressable>;
 }
 
-export function PatientTracker({
+export function PatientTracker(props: Parameters<typeof PatientTrackerPreview>[0]) {
+  return props.preview ? <PatientTrackerPreview {...props} /> : <PrivatePatientTracker {...props} />;
+}
+
+function PatientTrackerPreview({
   language,
   view,
   onNavigate,

@@ -1,0 +1,96 @@
+name: Deploy staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment: staging-release-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_PRIVATE_SUBNETS: ${{ vars.ECS_PRIVATE_SUBNETS }}
+      ECS_SECURITY_GROUP: ${{ vars.ECS_SECURITY_GROUP }}
+      API_REPOSITORY: ${{ vars.API_REPOSITORY }}
+      PORTAL_REPOSITORY: ${{ vars.PORTAL_REPOSITORY }}
+      API_TASK_FAMILY: ${{ vars.API_TASK_FAMILY }}
+      PORTAL_TASK_FAMILY: ${{ vars.PORTAL_TASK_FAMILY }}
+      WORKER_TASK_FAMILY: ${{ vars.WORKER_TASK_FAMILY }}
+      MIGRATION_TASK_FAMILY: ${{ vars.MIGRATION_TASK_FAMILY }}
+      PUBLIC_URL: ${{ vars.APP_ORIGIN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm exec -w @mwanamke/api -- prisma generate
+      - run: npm run verify
+      - run: npm run export -w @mwanamke/mobile
+      - run: npm audit --omit=dev --audit-level=high
+      - uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          allowed-account-ids: ${{ vars.AWS_ACCOUNT_ID }}
+      - uses: aws-actions/amazon-ecr-login@v2.1.6
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push immutable images
+        env:
+          REGISTRY: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+        run: |
+          docker buildx build --platform linux/arm64 --provenance=true --sbom=true --push --tag "$REGISTRY/$API_REPOSITORY:${GITHUB_SHA}-api" --file apps/api/Dockerfile .
+          docker buildx build --platform linux/arm64 --provenance=true --sbom=true --push --target migration --tag "$REGISTRY/$API_REPOSITORY:${GITHUB_SHA}-migration" --file apps/api/Dockerfile .
+          docker buildx build --platform linux/arm64 --provenance=true --sbom=true --push --tag "$REGISTRY/$PORTAL_REPOSITORY:${GITHUB_SHA}-portal" --file apps/portal/Dockerfile .
+      - name: Resolve image digests
+        run: |
+          API_DIGEST=$(aws ecr describe-images --repository-name "$API_REPOSITORY" --image-ids imageTag="${GITHUB_SHA}-api" --query 'imageDetails[0].imageDigest' --output text)
+          MIGRATION_DIGEST=$(aws ecr describe-images --repository-name "$API_REPOSITORY" --image-ids imageTag="${GITHUB_SHA}-migration" --query 'imageDetails[0].imageDigest' --output text)
+          PORTAL_DIGEST=$(aws ecr describe-images --repository-name "$PORTAL_REPOSITORY" --image-ids imageTag="${GITHUB_SHA}-portal" --query 'imageDetails[0].imageDigest' --output text)
+          echo "API_IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${API_REPOSITORY}@${API_DIGEST}" >> "$GITHUB_ENV"
+          echo "MIGRATION_IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${API_REPOSITORY}@${MIGRATION_DIGEST}" >> "$GITHUB_ENV"
+          echo "PORTAL_IMAGE=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${PORTAL_REPOSITORY}@${PORTAL_DIGEST}" >> "$GITHUB_ENV"
+      - name: Register immutable task definitions
+        run: |
+          register_task() {
+            family="$1"
+            image="$2"
+            aws ecs describe-task-definition --task-definition "$family" --query taskDefinition > "${family}.json"
+            jq --arg image "$image" '.containerDefinitions[0].image=$image | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)' "${family}.json" > "${family}-next.json"
+            aws ecs register-task-definition --cli-input-json "file://${family}-next.json" --query 'taskDefinition.taskDefinitionArn' --output text
+          }
+          echo "API_TASK=$(register_task "$API_TASK_FAMILY" "$API_IMAGE")" >> "$GITHUB_ENV"
+          echo "PORTAL_TASK=$(register_task "$PORTAL_TASK_FAMILY" "$PORTAL_IMAGE")" >> "$GITHUB_ENV"
+          echo "WORKER_TASK=$(register_task "$WORKER_TASK_FAMILY" "$API_IMAGE")" >> "$GITHUB_ENV"
+          echo "MIGRATION_TASK=$(register_task "$MIGRATION_TASK_FAMILY" "$MIGRATION_IMAGE")" >> "$GITHUB_ENV"
+      - name: Apply database migrations
+        run: |
+          NETWORK=$(jq -cn --arg subnets "$ECS_PRIVATE_SUBNETS" --arg sg "$ECS_SECURITY_GROUP" '{awsvpcConfiguration:{subnets:($subnets|split(",")),securityGroups:[$sg],assignPublicIp:"DISABLED"}}')
+          TASK=$(aws ecs run-task --cluster "$ECS_CLUSTER" --task-definition "$MIGRATION_TASK" --launch-type FARGATE --network-configuration "$NETWORK" --query 'tasks[0].taskArn' --output text)
+          test "$TASK" != "None"
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER" --tasks "$TASK"
+          EXIT_CODE=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks "$TASK" --query 'tasks[0].containers[0].exitCode' --output text)
+          test "$EXIT_CODE" = "0"
+      - name: Deploy services
+        run: |
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service api --task-definition "$API_TASK" --desired-count 1 >/dev/null
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service portal --task-definition "$PORTAL_TASK" --desired-count 1 >/dev/null
+          aws ecs update-service --cluster "$ECS_CLUSTER" --service worker --task-definition "$WORKER_TASK" --desired-count 1 >/dev/null
+          aws ecs wait services-stable --cluster "$ECS_CLUSTER" --services api portal worker
+      - name: Verify deployed boundary
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-all-errors "$PUBLIC_URL/health" | jq -e '.status == "healthy" and .sensitiveDataReadable == false'
+          curl --fail --silent --show-error --retry 5 --retry-all-errors "$PUBLIC_URL/" >/dev/null

@@ -73,3 +73,23 @@ jobs:
         run: docker build --file apps/api/Dockerfile --tag mwanamke-api:${{ github.sha }} .
       - name: Build portal image
         run: docker build --file apps/portal/Dockerfile --tag mwanamke-portal:${{ github.sha }} .
+
+  infrastructure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test infra/auth0/actions/workforce.test.cjs
+      - run: python3 -m unittest discover -s infra/aws/audit-sink -p 'test_*.py'
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.16.1
+      - run: terraform fmt -check -recursive infra
+      - run: terraform -chdir=infra/aws/bootstrap init -backend=false && terraform -chdir=infra/aws/bootstrap validate
+      - run: terraform -chdir=infra/aws/access init -backend=false && terraform -chdir=infra/aws/access validate
+      - run: terraform -chdir=infra/aws/audit-sink init -backend=false && terraform -chdir=infra/aws/audit-sink validate
+      - run: terraform -chdir=infra/aws/platform init -backend=false && terraform -chdir=infra/aws/platform validate
+      - run: terraform -chdir=infra/auth0/tenant init -backend=false && terraform -chdir=infra/auth0/tenant validate
