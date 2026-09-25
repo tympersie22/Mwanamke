@@ -38,6 +38,6 @@
     "react-native-safe-area-context": "5.7.0",
     "react-native-screens": "4.26.2",
     "typescript": "^5.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^5.0.2"
   }
 }
