@@ -48,7 +48,7 @@ describe("MWANAMKE API privacy boundary", () => {
   });
 
   it("makes payment reservation idempotent and failure-safe", async () => {
-    const payload = { appointmentId: "00000000-0000-4000-8000-000000000010", amountTzs: 35000, method: "mpesa", idempotencyKey: "idem_12345678" };
+    const payload = { appointmentId: "00000000-0000-4000-8000-000000000010", amountTzs: 35000, method: "mpesa", idempotencyKey: "idem_12345678" }; // gitleaks:allow -- synthetic idempotency identifier, not a credential
     const first = await app.inject({ method: "POST", url: "/v1/payments/reserve", headers: patientHeaders, payload });
     const second = await app.inject({ method: "POST", url: "/v1/payments/reserve", headers: patientHeaders, payload });
     expect(first.statusCode).toBe(202);

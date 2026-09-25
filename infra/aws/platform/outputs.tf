@@ -16,3 +16,29 @@ output "runtime_secret_arn" { value = aws_secretsmanager_secret.runtime.arn }
 output "database_identifier" { value = aws_db_instance.postgres.identifier }
 output "backup_vault_arn" { value = aws_backup_vault.main.arn }
 output "application_kms_key_arn" { value = aws_kms_key.application.arn }
+output "github_environment_variables" {
+  description = "Non-secret variables for the matching protected GitHub deployment environment."
+  value = {
+    AWS_REGION                = var.aws_region
+    AWS_ACCOUNT_ID            = var.account_id
+    AWS_DEPLOY_ROLE_ARN       = aws_iam_role.github_deploy.arn
+    ECS_CLUSTER               = aws_ecs_cluster.main.name
+    ECS_PRIVATE_SUBNETS       = join(",", values(aws_subnet.private)[*].id)
+    ECS_SECURITY_GROUP        = aws_security_group.service.id
+    API_REPOSITORY            = aws_ecr_repository.api.name
+    PORTAL_REPOSITORY         = aws_ecr_repository.portal.name
+    API_TASK_FAMILY           = aws_ecs_task_definition.api.family
+    PORTAL_TASK_FAMILY        = aws_ecs_task_definition.portal.family
+    WORKER_TASK_FAMILY        = aws_ecs_task_definition.worker.family
+    MIGRATION_TASK_FAMILY     = aws_ecs_task_definition.migration.family
+    APP_ORIGIN                = "https://${var.domain_name}"
+    OIDC_PATIENT_ISSUER_URL   = var.patient_oidc_issuer_url
+    OIDC_PATIENT_AUDIENCE     = var.patient_oidc_audience
+    OIDC_PATIENT_JWKS_URL     = var.patient_oidc_jwks_url
+    OIDC_WORKFORCE_ISSUER_URL = var.workforce_oidc_issuer_url
+    OIDC_WORKFORCE_AUDIENCE   = var.workforce_oidc_audience
+    OIDC_WORKFORCE_JWKS_URL   = var.workforce_oidc_jwks_url
+    AUDIT_SINK_URL            = var.audit_sink_url
+    ENABLE_ENCRYPTED_RECORDS  = "false"
+  }
+}

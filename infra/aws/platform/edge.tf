@@ -16,6 +16,8 @@ resource "aws_acm_certificate_validation" "main" {
   validation_record_fqdns = [for record in aws_route53_record.certificate : record.fqdn]
 }
 
+# Public HTTPS ingress is intentional; ACM TLS and AWS WAF protect this entry point.
+# trivy:ignore:AVD-AWS-0053
 resource "aws_lb" "main" {
   name                       = local.name
   internal                   = false

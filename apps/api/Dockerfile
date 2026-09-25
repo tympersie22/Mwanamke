@@ -14,6 +14,7 @@ RUN npm run build -w @mwanamke/api
 
 FROM build AS migration
 ENV NODE_ENV=production
+USER node
 CMD ["npm", "run", "prisma:migrate", "-w", "@mwanamke/api"]
 
 FROM node:22-alpine AS runtime-dependencies

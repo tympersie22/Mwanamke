@@ -98,12 +98,20 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
+    protocol    = "tcp"
+    from_port   = 3000
+    to_port     = 3000
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
+  egress {
+    protocol    = "tcp"
+    from_port   = 4100
+    to_port     = 4100
+    cidr_blocks = [aws_vpc.main.cidr_block]
   }
 }
+# HTTPS egress reaches Auth0 and the audit sink; PostgreSQL/Valkey stay within the VPC.
+# trivy:ignore:aws-vpc-no-public-egress-sgr
 resource "aws_security_group" "service" {
   name        = "${local.name}-service"
   description = "Only the load balancer reaches application containers"
@@ -122,11 +130,26 @@ resource "aws_security_group" "service" {
     to_port         = 4100
     security_groups = [aws_security_group.alb.id]
   }
+  # HTTPS is required for Auth0 JWKS, the separate audit sink and AWS APIs.
+  # No outbound plaintext HTTP or arbitrary TCP/UDP is permitted.
+  # trivy:ignore:aws-vpc-no-public-egress-sgr
   egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
+    protocol    = "tcp"
+    from_port   = 443
+    to_port     = 443
     cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    protocol    = "tcp"
+    from_port   = 5432
+    to_port     = 5432
+    cidr_blocks = [aws_vpc.main.cidr_block]
+  }
+  egress {
+    protocol    = "tcp"
+    from_port   = 6379
+    to_port     = 6379
+    cidr_blocks = [aws_vpc.main.cidr_block]
   }
 }
 resource "aws_security_group" "database" {
@@ -139,12 +162,7 @@ resource "aws_security_group" "database" {
     to_port         = 5432
     security_groups = [aws_security_group.service.id]
   }
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+
 }
 resource "aws_security_group" "cache" {
   name        = "${local.name}-cache"
@@ -156,12 +174,7 @@ resource "aws_security_group" "cache" {
     to_port         = 6379
     security_groups = [aws_security_group.service.id]
   }
-  egress {
-    protocol    = "-1"
-    from_port   = 0
-    to_port     = 0
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+
 }
 
 resource "aws_security_group" "endpoints" {
