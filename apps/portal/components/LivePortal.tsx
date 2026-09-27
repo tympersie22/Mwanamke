@@ -126,7 +126,7 @@ function Skeletons({ label }: { label: string }) {
   );
 }
 
-export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePreview }: { signedIn: boolean; authFailed: boolean; initialLanguage: Language; localRolePreview: boolean }) {
+export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePreview, servicePreview = false }: { signedIn: boolean; authFailed: boolean; initialLanguage: Language; localRolePreview: boolean; servicePreview?: boolean }) {
   const router = useRouter();
   const [language, setLanguage] = useState<Language>(initialLanguage);
   const [actor, setActor] = useState<Actor | null>(null);
@@ -465,6 +465,7 @@ export function LivePortal({ signedIn, authFailed, initialLanguage, localRolePre
       </header>
 
       <main id="main" className="live-main">
+        {servicePreview ? <p className="live-auth-note" role="status">{t("Onyesho la kabla ya uzinduzi. Akaunti na huduma za miadi bado hazijafunguliwa. MWANAMKE itahudumia Tanzania na Zanzibar pekee.", "Pre-launch preview. Accounts and appointment services are not open yet. MWANAMKE will serve only Tanzania and Zanzibar.")}</p> : null}
         {notice ? <StatusMessage kind="success" dismissLabel={t("Funga ujumbe", "Dismiss message")} onDismiss={() => setNotice("")}>{notice}</StatusMessage> : null}
         {error ? <StatusMessage kind="error"><p>{error}</p><button type="button" className="live-inline-action" onClick={() => signedIn ? void load(path) : router.push("/auth/login")}>{signedIn ? t("Jaribu tena", "Try again") : t("Ingia tena", "Sign in again")}</button></StatusMessage> : null}
 

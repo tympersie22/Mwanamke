@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { getOidc, oidc, redirectUri, type OidcRealm } from "@/lib/oidc";
 import { apiBase, cookieOptions, portalOrigin, seal, sessionName, transactionName, unseal } from "@/lib/session";
 export async function GET(request: Request) {
+  if (process.env.PORTAL_LAUNCH_MODE === "preview") return Response.redirect(new URL("/sign-in-unavailable", portalOrigin()), 303);
   const jar = await cookies();
   const value = jar.get(transactionName)?.value;
   jar.delete(transactionName);

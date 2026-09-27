@@ -5,6 +5,7 @@ let windowStart = 0;
 let attempts = 0;
 let active = 0;
 export async function POST(request: Request) {
+  if (process.env.PORTAL_LAUNCH_MODE === "preview") return Response.json({ error: "SERVICE_NOT_LAUNCHED" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   // Coarse per-instance abuse guard; the deployment must also enforce distributed ingress limits.
   if (Date.now() - windowStart > 60_000) { windowStart = Date.now(); attempts = 0; }
   if (++attempts > 30 || active >= 4) return Response.json({ error: "RATE_LIMITED" }, { status: 429, headers: { "Retry-After": "60" } });

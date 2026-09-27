@@ -8,7 +8,11 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run components/*.test.ts"
+    "test": "vitest run components/*.test.ts",
+    "build:cloudflare": "node scripts/cloudflare-guard.mjs source && opennextjs-cloudflare build && node scripts/cloudflare-guard.mjs bundle",
+    "preview:cloudflare": "opennextjs-cloudflare preview",
+    "deploy:cloudflare": "node scripts/cloudflare-guard.mjs bundle && opennextjs-cloudflare deploy",
+    "types:cloudflare": "wrangler types --strict-vars=false --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@mwanamke/domain": "*",
@@ -23,10 +27,12 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "eslint": "^9.34.0",
     "eslint-config-next": "^16.3.4",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "wrangler": "^4.141.0"
   }
 }

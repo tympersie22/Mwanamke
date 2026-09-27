@@ -10,6 +10,9 @@ const previewSubjects: Record<string, string> = {
 };
 export async function GET(request: Request) {
   try {
+    if (process.env.PORTAL_LAUNCH_MODE === "preview") {
+      return Response.redirect(new URL("/sign-in-unavailable", portalOrigin()), 303);
+    }
     const requestUrl = new URL(request.url);
     const requestedRole = requestUrl.searchParams.get("role");
     if (localRolePreviewEnabled()) {

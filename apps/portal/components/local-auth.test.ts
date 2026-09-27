@@ -4,7 +4,9 @@ const cookieJar = vi.hoisted(() => ({ set: vi.fn(), delete: vi.fn(), get: vi.fn(
 vi.mock("next/headers", () => ({ cookies: vi.fn(async () => cookieJar) }));
 
 import { GET } from "../app/auth/login/route";
-import { localRolePreviewEnabled, sessionName, unseal, type Session } from "../lib/session";
+import { localRolePreviewEnabled, readSession, sessionName, unseal, type Session } from "../lib/session";
+import { GET as callback } from "../app/auth/callback/route";
+import { POST as native } from "../app/auth/native/route";
 
 describe("local role preview authentication", () => {
   beforeEach(() => {
@@ -35,6 +37,18 @@ describe("local role preview authentication", () => {
     vi.stubEnv("ALLOW_DEMO_AUTH", "false");
     const response = await GET(new Request("http://localhost:3000/auth/login"));
     expect(response.status).toBe(503);
+  });
+
+  it("keeps public preview closed to login, callback, mobile exchange and existing cookies", async () => {
+    vi.stubEnv("PORTAL_LAUNCH_MODE", "preview");
+    const response = await GET(new Request("http://localhost:3000/auth/login?role=platform-admin"));
+    expect(response.headers.get("location")).toBe("http://localhost:3000/sign-in-unavailable");
+    expect(cookieJar.set).not.toHaveBeenCalled();
+    expect((await callback(new Request("http://localhost:3000/auth/callback?code=stale"))).headers.get("location")).toBe("http://localhost:3000/sign-in-unavailable");
+    expect((await native(new Request("http://localhost:3000/auth/native", { method: "POST" }))).status).toBe(503);
+    cookieJar.get.mockReturnValue({ value: "untrusted-session-cookie" });
+    vi.stubEnv("PORTAL_SESSION_KEY", "");
+    expect(await readSession()).toBeNull();
   });
 
   it("permits a production-built demo container only on an explicit loopback origin", () => {
