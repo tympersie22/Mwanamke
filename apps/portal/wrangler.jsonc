@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "mwanamke-portal",
+  "account_id": "02f453f08cc4b14195891bbe87490372",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-27",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "mwanamke-portal" }
+  ],
+  "vars": {
+    "PORTAL_ORIGIN": "https://mwanamke-portal.mbwanaally1088.workers.dev",
+    "PORTAL_LAUNCH_MODE": "preview",
+    "ALLOW_DEMO_AUTH": "false",
+    "MWANAMKE_LOCAL_DEMO": "false",
+    "ENABLE_ENCRYPTED_RECORDS": "false"
+  },
+  "observability": { "enabled": false }
+}

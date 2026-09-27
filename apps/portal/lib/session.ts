@@ -66,6 +66,7 @@ export function unseal<T extends { expiresAt: number }>(value: string, purpose: 
   return null;
 }
 export async function readSession() {
+  if (process.env.PORTAL_LAUNCH_MODE === "preview") return null;
   const value = (await cookies()).get(sessionName)?.value;
   return value ? unseal<Session>(value, sessionName) : null;
 }
